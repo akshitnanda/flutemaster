@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { AudioMutes, AudioVolumes, InstrumentType, Song } from '../types/music';
 import { INSTRUMENT_META } from '../data/instruments';
 import {
@@ -13,6 +13,7 @@ import {
   Play,
   Repeat,
   RotateCcw,
+  SlidersHorizontal,
   Volume2,
   VolumeX,
   X,
@@ -87,233 +88,290 @@ export const PracticeControls: React.FC<PracticeControlsProps> = ({
   onToggleMute,
   onToggleTanpuraHold,
 }) => {
+  const [mobilePanelOpen, setMobilePanelOpen] = useState(false);
   const effectiveBpm = Math.round(baseBpm * tempoRate);
   const hasLoopBounds = loopStart !== null && loopEnd !== null && loopEnd > loopStart;
 
+  const cycleTempoPreset = () => {
+    const next = tempoRate >= 0.99 ? 0.5 : tempoRate < 0.7 ? 0.75 : 1.0;
+    onTempoChange(next);
+  };
+
   return (
-    <div className="w-full bg-[#181614] border-t border-[#d4a373]/20 px-3.5 py-2.5 shrink-0 select-none">
-      <div className="flex flex-wrap xl:flex-nowrap items-center justify-between gap-3">
-        {/* ==================================================================
-            1. PLAYBACK TRANSPORT & STEP-BY-STEP ("WAIT FOR ME") MODE
-            ================================================================== */}
-        <div className="flex items-center gap-2 shrink-0">
-          {/* Play / Pause Primary Button */}
-          <button
-            onClick={onTogglePlay}
-            className={`flex items-center justify-center gap-2 px-4 h-10 rounded-xl font-semibold text-sm transition-all cursor-pointer ${
-              isPlaying
-                ? 'bg-[#2a9d8f] text-[#f8f9fa] shadow-[0_0_20px_rgba(42,157,143,0.5)] hover:bg-[#33b0a1]'
-                : 'bg-[#d4a373] text-[#121212] shadow-[0_0_16px_rgba(212,163,115,0.3)] hover:bg-[#e3b78a]'
-            }`}
-            title="Play / Pause (Spacebar)"
-          >
-            {isPlaying ? <Pause className="w-4 h-4 fill-current" /> : <Play className="w-4 h-4 fill-current" />}
-            <span>{isPlaying ? 'Pause' : 'Play'}</span>
-          </button>
+    <div className="w-full bg-[#181614] border-t border-[#d4a373]/20 px-2.5 sm:px-3.5 py-2 sm:py-2.5 shrink-0 select-none pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+      {/* Responsive Console Grid:
+          - Mobile (< md): Compact sticky-ready Transport row + collapsible Mixer & Loop drawer
+          - Tablet / Small Laptop (md..xl): Clean 2-row studio dock (Transport+Tempo/Loop, full-width 3-col Mixer!)
+          - Wide Desktop (xl+): Single sleek horizontal studio bar */}
+      <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-2 sm:gap-2.5 xl:gap-3">
+        {/* ROW 1 (on md..lg) / LEFT+CENTER (on xl+): TRANSPORT + TEMPO/LOOP */}
+        <div className="flex flex-wrap md:flex-nowrap items-center justify-between xl:justify-start gap-2 sm:gap-2.5 min-w-0">
+          {/* ==================================================================
+              1. PLAYBACK TRANSPORT & STEP-BY-STEP ("WAIT FOR ME") MODE
+              ================================================================== */}
+          <div className="flex items-center justify-between md:justify-start gap-1.5 sm:gap-2 w-full md:w-auto shrink-0">
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              {/* Play / Pause Primary Button */}
+              <button
+                onClick={onTogglePlay}
+                className={`flex items-center justify-center gap-1.5 sm:gap-2 px-3.5 sm:px-4 h-9 sm:h-10 rounded-xl font-semibold text-xs sm:text-sm transition-all cursor-pointer ${
+                  isPlaying
+                    ? 'bg-[#2a9d8f] text-[#f8f9fa] shadow-[0_0_20px_rgba(42,157,143,0.5)] hover:bg-[#33b0a1]'
+                    : 'bg-[#d4a373] text-[#121212] shadow-[0_0_16px_rgba(212,163,115,0.3)] hover:bg-[#e3b78a]'
+                }`}
+                title="Play / Pause (Spacebar)"
+              >
+                {isPlaying ? (
+                  <Pause className="w-4 h-4 fill-current" />
+                ) : (
+                  <Play className="w-4 h-4 fill-current" />
+                )}
+                <span>{isPlaying ? 'Pause' : 'Play'}</span>
+              </button>
 
-          {/* Restart */}
-          <button
-            onClick={onRestart}
-            className="w-9 h-10 rounded-xl bg-[#22201d] border border-white/10 text-[#d0c8be] hover:text-[#f8f9fa] hover:border-[#d4a373]/40 flex items-center justify-center transition-colors cursor-pointer"
-            title="Restart song from beginning"
-          >
-            <RotateCcw className="w-4 h-4" />
-          </button>
+              {/* Restart */}
+              <button
+                onClick={onRestart}
+                className="w-9 h-9 sm:h-10 rounded-xl bg-[#22201d] border border-white/10 text-[#d0c8be] hover:text-[#f8f9fa] hover:border-[#d4a373]/40 flex items-center justify-center transition-colors cursor-pointer"
+                title="Restart song from beginning"
+              >
+                <RotateCcw className="w-4 h-4" />
+              </button>
 
-          {/* Wait for Me / Step-by-Step Mode Toggle */}
-          <div className="flex items-center gap-1.5 pl-1 border-l border-white/10">
-            <button
-              onClick={onToggleStepMode}
-              className={`flex items-center gap-1.5 px-3 h-10 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
-                stepMode
-                  ? 'bg-[#e9c46a]/20 border-[#e9c46a] text-[#e9c46a] shadow-[0_0_14px_rgba(233,196,106,0.22)]'
-                  : 'bg-[#22201d] border-white/10 text-[#d0c8be] hover:border-[#d4a373]/45 hover:text-[#f8f9fa]'
-              }`}
-              title="Wait for Me Mode: pauses on each note so you can inspect 3D fingerings and press Next"
-            >
-              <Footprints className="w-3.5 h-3.5" />
-              <span>Step Mode</span>
-            </button>
-
-            {stepMode && (
-              <div className="flex items-center gap-1 bg-[#221f1a] p-1 rounded-xl border border-[#e9c46a]/35">
+              {/* Wait for Me / Step-by-Step Mode Toggle */}
+              <div className="flex items-center gap-1 sm:gap-1.5 pl-1 border-l border-white/10">
                 <button
-                  onClick={onStepPrev}
-                  disabled={activeNoteIndex <= 0}
-                  className="p-1.5 rounded-lg text-[#f8f9fa] hover:bg-white/10 disabled:opacity-35 cursor-pointer disabled:cursor-not-allowed"
-                  title="Previous note (Left Arrow)"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={onStepReplay}
-                  className="px-2 py-1 rounded-lg text-[11px] font-mono-tech text-[#e9c46a] hover:bg-white/10 cursor-pointer"
-                  title="Replay current note audio"
-                >
-                  {Math.max(1, activeNoteIndex + 1)}/{song.notes.length}
-                </button>
-                <button
-                  onClick={onStepNext}
-                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#e9c46a] text-[#121212] text-xs font-bold hover:bg-[#f0d284] transition-colors cursor-pointer"
-                  title="Advance to next note (Right Arrow)"
-                >
-                  <span>Next</span>
-                  <ChevronRight className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* ==================================================================
-            2. TEMPO SCALING (0.5x – 1.0x PITCH-PRESERVED) & A-B LOOP
-            ================================================================== */}
-        <div className="flex flex-wrap sm:flex-nowrap items-center gap-3 px-3 py-1.5 rounded-xl bg-[#1f1d1a] border border-white/8">
-          {/* Tempo Slider + Live Tap Tempo */}
-          <div className="flex flex-col gap-1 min-w-[205px]">
-            <div className="flex items-center justify-between gap-2 text-[11px]">
-              <div className="flex items-center gap-1.5">
-                <span className="text-[#a69f95] font-medium">Tempo</span>
-                <button
-                  onClick={onTapTempo}
-                  className={`inline-flex items-center gap-1 px-1.5 py-[1px] rounded border text-[9px] font-mono-tech font-semibold transition-all cursor-pointer active:scale-95 ${
-                    tapPulse > 0
-                      ? 'bg-[#2a9d8f]/25 border-[#72efdd]/60 text-[#72efdd]'
-                      : 'bg-[#141311] border-[#d4a373]/30 text-[#d4a373] hover:border-[#e9c46a] hover:text-[#e9c46a]'
+                  onClick={onToggleStepMode}
+                  className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 h-9 sm:h-10 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
+                    stepMode
+                      ? 'bg-[#e9c46a]/20 border-[#e9c46a] text-[#e9c46a] shadow-[0_0_14px_rgba(233,196,106,0.22)]'
+                      : 'bg-[#22201d] border-white/10 text-[#d0c8be] hover:border-[#d4a373]/45 hover:text-[#f8f9fa]'
                   }`}
-                  title="Tap rhythmically along to any YouTube cover to lock the BPM live"
+                  title="Wait for Me Mode: pauses on each note so you can inspect 3D fingerings and press Next"
                 >
-                  <Activity className="w-2.5 h-2.5" />
-                  <span>Tap</span>
+                  <Footprints className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Step Mode</span>
+                  <span className="sm:hidden">Step</span>
                 </button>
-                {isCustomBpm && (
+
+                {stepMode && (
+                  <div className="flex items-center gap-0.5 sm:gap-1 bg-[#221f1a] p-0.5 sm:p-1 rounded-xl border border-[#e9c46a]/35">
+                    <button
+                      onClick={onStepPrev}
+                      disabled={activeNoteIndex <= 0}
+                      className="p-1 sm:p-1.5 rounded-lg text-[#f8f9fa] hover:bg-white/10 disabled:opacity-35 cursor-pointer disabled:cursor-not-allowed"
+                      title="Previous note (Left Arrow)"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={onStepReplay}
+                      className="px-1.5 sm:px-2 py-1 rounded-lg text-[10px] sm:text-[11px] font-mono-tech text-[#e9c46a] hover:bg-white/10 cursor-pointer"
+                      title="Replay current note audio"
+                    >
+                      {Math.max(1, activeNoteIndex + 1)}/{song.notes.length}
+                    </button>
+                    <button
+                      onClick={onStepNext}
+                      className="flex items-center gap-0.5 sm:gap-1 px-2 sm:px-2.5 py-1 rounded-lg bg-[#e9c46a] text-[#121212] text-xs font-bold hover:bg-[#f0d284] transition-colors cursor-pointer"
+                      title="Advance to next note (Right Arrow)"
+                    >
+                      <span className="hidden sm:inline">Next</span>
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Mobile Quick Tempo Chip + Expandable Mixer/Loop Button */}
+            <div className="flex md:hidden items-center gap-1.5 shrink-0">
+              {!stepMode && (
+                <button
+                  onClick={cycleTempoPreset}
+                  className="px-2 h-9 rounded-xl bg-[#22201d] border border-white/10 text-[11px] font-mono-tech font-semibold text-[#d4a373] cursor-pointer"
+                  title="Cycle Tempo Speed (0.5x / 0.75x / 1x)"
+                >
+                  {tempoRate === 1 ? '1x' : `${tempoRate}x`}
+                </button>
+              )}
+              <button
+                onClick={() => setMobilePanelOpen((v) => !v)}
+                className={`flex items-center gap-1.5 px-2.5 h-9 rounded-xl border text-xs font-medium cursor-pointer transition-all ${
+                  mobilePanelOpen || loopEnabled
+                    ? 'bg-[#2a9d8f]/25 border-[#72efdd]/55 text-[#72efdd]'
+                    : 'bg-[#22201d] border-white/10 text-[#d0c8be]'
+                }`}
+                aria-expanded={mobilePanelOpen}
+              >
+                <SlidersHorizontal className="w-3.5 h-3.5" />
+                <span>Mixer</span>
+              </button>
+            </div>
+          </div>
+
+          {/* ==================================================================
+              2. TEMPO SCALING (0.5x – 1.0x PITCH-PRESERVED) & A-B LOOP
+              ================================================================== */}
+          <div
+            className={`${
+              mobilePanelOpen ? 'flex' : 'hidden md:flex'
+            } flex-col sm:flex-row sm:items-center gap-2.5 sm:gap-3 px-3 py-2 sm:py-1.5 rounded-xl bg-[#1f1d1a] border border-white/8 w-full md:w-auto md:flex-1 xl:flex-none min-w-0`}
+          >
+            {/* Tempo Slider + Live Tap Tempo */}
+            <div className="flex flex-col gap-1 flex-1 sm:min-w-[185px] xl:min-w-[200px]">
+              <div className="flex items-center justify-between gap-2 text-[11px]">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[#a69f95] font-medium">Tempo</span>
                   <button
-                    onClick={onResetBpm}
-                    className="px-1 py-[1px] rounded bg-[#e9c46a]/15 border border-[#e9c46a]/40 text-[9px] font-mono-tech text-[#e9c46a] hover:bg-[#e9c46a]/25 transition-colors cursor-pointer"
-                    title={`Reset custom BPM back to studio default (${song.bpm} BPM)`}
+                    onClick={onTapTempo}
+                    className={`inline-flex items-center gap-1 px-1.5 py-[1px] rounded border text-[9px] font-mono-tech font-semibold transition-all cursor-pointer active:scale-95 ${
+                      tapPulse > 0
+                        ? 'bg-[#2a9d8f]/25 border-[#72efdd]/60 text-[#72efdd]'
+                        : 'bg-[#141311] border-[#d4a373]/30 text-[#d4a373] hover:border-[#e9c46a] hover:text-[#e9c46a]'
+                    }`}
+                    title="Tap rhythmically along to any YouTube cover to lock the BPM live"
                   >
-                    Reset
+                    <Activity className="w-2.5 h-2.5" />
+                    <span>Tap</span>
+                  </button>
+                  {isCustomBpm && (
+                    <button
+                      onClick={onResetBpm}
+                      className="px-1 py-[1px] rounded bg-[#e9c46a]/15 border border-[#e9c46a]/40 text-[9px] font-mono-tech text-[#e9c46a] hover:bg-[#e9c46a]/25 transition-colors cursor-pointer"
+                      title={`Reset custom BPM back to studio default (${song.bpm} BPM)`}
+                    >
+                      Reset
+                    </button>
+                  )}
+                </div>
+                <span
+                  className={`font-mono-tech font-semibold whitespace-nowrap ${
+                    isCustomBpm ? 'text-[#72efdd]' : 'text-[#d4a373]'
+                  }`}
+                >
+                  {tempoRate.toFixed(2)}x · {effectiveBpm} BPM
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="range"
+                  min={0.5}
+                  max={1.0}
+                  step={0.05}
+                  value={tempoRate}
+                  onChange={(e) => onTempoChange(parseFloat(e.target.value))}
+                  className="studio-slider flex-1"
+                  aria-label="Playback Tempo (Pitch Preserved)"
+                />
+                <div className="flex items-center gap-0.5 shrink-0">
+                  {[0.5, 0.75, 1.0].map((preset) => (
+                    <button
+                      key={preset}
+                      onClick={() => onTempoChange(preset)}
+                      className={`px-1.5 py-0.5 rounded text-[9px] font-mono-tech cursor-pointer transition-colors ${
+                        Math.abs(tempoRate - preset) < 0.01
+                          ? 'bg-[#d4a373] text-[#121212] font-bold'
+                          : 'text-[#a69f95] hover:bg-white/8'
+                      }`}
+                    >
+                      {preset === 1 ? '1x' : `${preset}x`}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* A-B Loop Controls */}
+            <div className="flex flex-col gap-1 pt-2 sm:pt-0 sm:pl-3 border-t sm:border-t-0 sm:border-l border-white/10 min-w-0">
+              <div className="flex items-center gap-1.5">
+                <span className="text-[11px] text-[#a69f95] font-medium mr-0.5 whitespace-nowrap">
+                  A-B Loop
+                </span>
+                <button
+                  onClick={onSetLoopA}
+                  className={`px-2 py-0.5 rounded text-[10px] font-mono-tech border transition-colors cursor-pointer ${
+                    loopStart !== null
+                      ? 'bg-[#e9c46a]/20 border-[#e9c46a]/60 text-[#e9c46a] font-semibold'
+                      : 'bg-[#141311] border-white/10 text-[#d0c8be] hover:border-[#d4a373]/40'
+                  }`}
+                  title="Set Loop Start (A) at current playhead"
+                >
+                  {loopStart !== null ? `A:${loopStart.toFixed(0)}b` : 'Set A'}
+                </button>
+                <button
+                  onClick={onSetLoopB}
+                  className={`px-2 py-0.5 rounded text-[10px] font-mono-tech border transition-colors cursor-pointer ${
+                    loopEnd !== null
+                      ? 'bg-[#e9c46a]/20 border-[#e9c46a]/60 text-[#e9c46a] font-semibold'
+                      : 'bg-[#141311] border-white/10 text-[#d0c8be] hover:border-[#d4a373]/40'
+                  }`}
+                  title="Set Loop End (B) at current playhead"
+                >
+                  {loopEnd !== null ? `B:${loopEnd.toFixed(0)}b` : 'Set B'}
+                </button>
+                <button
+                  onClick={onToggleLoop}
+                  disabled={!hasLoopBounds}
+                  className={`p-1 rounded border transition-colors cursor-pointer disabled:opacity-35 disabled:cursor-not-allowed ${
+                    loopEnabled && hasLoopBounds
+                      ? 'bg-[#2a9d8f] border-[#72efdd] text-[#f8f9fa]'
+                      : 'bg-[#141311] border-white/10 text-[#d0c8be] hover:border-[#2a9d8f]/50'
+                  }`}
+                  title="Toggle A-B Loop Playback"
+                >
+                  <Repeat className="w-3 h-3" />
+                </button>
+                {(loopStart !== null || loopEnd !== null) && (
+                  <button
+                    onClick={onClearLoop}
+                    className="p-1 rounded text-[#a69f95] hover:text-[#f8f9fa] hover:bg-white/10 cursor-pointer"
+                    title="Clear A-B Loop"
+                  >
+                    <X className="w-3 h-3" />
                   </button>
                 )}
               </div>
-              <span
-                className={`font-mono-tech font-semibold ${
-                  isCustomBpm ? 'text-[#72efdd]' : 'text-[#d4a373]'
-                }`}
-              >
-                {tempoRate.toFixed(2)}x · {effectiveBpm} BPM
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <input
-                type="range"
-                min={0.5}
-                max={1.0}
-                step={0.05}
-                value={tempoRate}
-                onChange={(e) => onTempoChange(parseFloat(e.target.value))}
-                className="studio-slider flex-1"
-                aria-label="Playback Tempo (Pitch Preserved)"
-              />
-              <div className="flex items-center gap-0.5">
-                {[0.5, 0.75, 1.0].map((preset) => (
-                  <button
-                    key={preset}
-                    onClick={() => onTempoChange(preset)}
-                    className={`px-1.5 py-0.5 rounded text-[9px] font-mono-tech cursor-pointer transition-colors ${
-                      Math.abs(tempoRate - preset) < 0.01
-                        ? 'bg-[#d4a373] text-[#121212] font-bold'
-                        : 'text-[#a69f95] hover:bg-white/8'
-                    }`}
-                  >
-                    {preset === 1 ? '1x' : `${preset}x`}
-                  </button>
-                ))}
+
+              {/* 1-Click Song Section Loop Presets */}
+              <div className="flex items-center gap-1 overflow-x-auto no-scrollbar max-w-full sm:max-w-[215px]">
+                {song.sections.map((sec) => {
+                  const isSelected =
+                    loopEnabled && loopStart === sec.startBeat && loopEnd === sec.endBeat;
+                  return (
+                    <button
+                      key={sec.id}
+                      onClick={() => onSelectSectionLoop(sec.startBeat, sec.endBeat)}
+                      className={`px-1.5 py-[1px] rounded text-[9px] whitespace-nowrap transition-colors cursor-pointer shrink-0 ${
+                        isSelected
+                          ? 'bg-[#2a9d8f]/30 text-[#72efdd] border border-[#2a9d8f]/60 font-medium'
+                          : 'bg-white/[0.04] text-[#a69f95] hover:text-[#f8f9fa] hover:bg-white/10'
+                      }`}
+                      title={`Loop section: ${sec.name}`}
+                    >
+                      {sec.name.split(' ')[0]}
+                    </button>
+                  );
+                })}
               </div>
-            </div>
-          </div>
-
-          {/* A-B Loop Controls */}
-          <div className="flex flex-col gap-1 pl-3 border-l border-white/10">
-            <div className="flex items-center gap-1.5">
-              <span className="text-[11px] text-[#a69f95] font-medium mr-0.5">A-B Loop</span>
-              <button
-                onClick={onSetLoopA}
-                className={`px-2 py-0.5 rounded text-[10px] font-mono-tech border transition-colors cursor-pointer ${
-                  loopStart !== null
-                    ? 'bg-[#e9c46a]/20 border-[#e9c46a]/60 text-[#e9c46a] font-semibold'
-                    : 'bg-[#141311] border-white/10 text-[#d0c8be] hover:border-[#d4a373]/40'
-                }`}
-                title="Set Loop Start (A) at current playhead"
-              >
-                {loopStart !== null ? `A:${loopStart.toFixed(0)}b` : 'Set A'}
-              </button>
-              <button
-                onClick={onSetLoopB}
-                className={`px-2 py-0.5 rounded text-[10px] font-mono-tech border transition-colors cursor-pointer ${
-                  loopEnd !== null
-                    ? 'bg-[#e9c46a]/20 border-[#e9c46a]/60 text-[#e9c46a] font-semibold'
-                    : 'bg-[#141311] border-white/10 text-[#d0c8be] hover:border-[#d4a373]/40'
-                }`}
-                title="Set Loop End (B) at current playhead"
-              >
-                {loopEnd !== null ? `B:${loopEnd.toFixed(0)}b` : 'Set B'}
-              </button>
-              <button
-                onClick={onToggleLoop}
-                disabled={!hasLoopBounds}
-                className={`p-1 rounded border transition-colors cursor-pointer disabled:opacity-35 disabled:cursor-not-allowed ${
-                  loopEnabled && hasLoopBounds
-                    ? 'bg-[#2a9d8f] border-[#72efdd] text-[#f8f9fa]'
-                    : 'bg-[#141311] border-white/10 text-[#d0c8be] hover:border-[#2a9d8f]/50'
-                }`}
-                title="Toggle A-B Loop Playback"
-              >
-                <Repeat className="w-3 h-3" />
-              </button>
-              {(loopStart !== null || loopEnd !== null) && (
-                <button
-                  onClick={onClearLoop}
-                  className="p-1 rounded text-[#a69f95] hover:text-[#f8f9fa] hover:bg-white/10 cursor-pointer"
-                  title="Clear A-B Loop"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              )}
-            </div>
-
-            {/* 1-Click Song Section Loop Presets */}
-            <div className="flex items-center gap-1 overflow-x-auto max-w-[230px]">
-              {song.sections.map((sec) => {
-                const isSelected =
-                  loopEnabled && loopStart === sec.startBeat && loopEnd === sec.endBeat;
-                return (
-                  <button
-                    key={sec.id}
-                    onClick={() => onSelectSectionLoop(sec.startBeat, sec.endBeat)}
-                    className={`px-1.5 py-[1px] rounded text-[9px] whitespace-nowrap transition-colors cursor-pointer ${
-                      isSelected
-                        ? 'bg-[#2a9d8f]/30 text-[#72efdd] border border-[#2a9d8f]/60 font-medium'
-                        : 'bg-white/[0.04] text-[#a69f95] hover:text-[#f8f9fa] hover:bg-white/10'
-                    }`}
-                    title={`Loop section: ${sec.name}`}
-                  >
-                    {sec.name.split(' ')[0]}
-                  </button>
-                );
-              })}
             </div>
           </div>
         </div>
 
         {/* ==================================================================
-            3. INDEPENDENT 3-LAYER AUDIO MIXER (Flute · Tanpura · Tabla)
+            3. INDEPENDENT 3-LAYER AUDIO MIXER (Lead · Tanpura · Tabla)
+            - Balanced full-width 3-column grid on mobile/tablet/small-laptop
+            - Compact fixed strip on xl+ wide desktop
             ================================================================== */}
-        <div className="flex items-center gap-3 px-3 py-1.5 rounded-xl bg-[#1f1d1a] border border-white/8">
+        <div
+          className={`${
+            mobilePanelOpen ? 'grid' : 'hidden md:grid'
+          } grid-cols-1 sm:grid-cols-3 xl:flex items-center gap-2.5 sm:gap-3 px-3 py-2 sm:py-1.5 rounded-xl bg-[#1f1d1a] border border-white/8 w-full xl:w-auto shrink-0`}
+        >
           {/* Layer 1: Active Instrument Lead */}
           <AudioChannelSlider
             label={(INSTRUMENT_META[instrument] ?? INSTRUMENT_META.bansuri).mixerLabel}
-            icon={<Music2 className="w-3.5 h-3.5 text-[#38bfa9]" />}
+            icon={<Music2 className="w-3.5 h-3.5 text-[#38bfa9] shrink-0" />}
             value={volumes.flute}
             muted={mutes.flute}
             accent="jade"
@@ -322,10 +380,17 @@ export const PracticeControls: React.FC<PracticeControlsProps> = ({
           />
 
           {/* Layer 2: Tanpura Drone */}
-          <div className="pl-2.5 border-l border-white/10 flex items-center gap-2">
+          <div className="pt-2 sm:pt-0 sm:pl-2.5 border-t sm:border-t-0 sm:border-l border-white/10 flex items-center gap-2 min-w-0">
             <AudioChannelSlider
               label={`Tanpura (${song.scale.rootNote.replace(/\d/, '')})`}
-              icon={<Disc3 className={`w-3.5 h-3.5 text-[#d4a373] ${tanpuraHold || isPlaying ? 'animate-spin' : ''}`} style={{ animationDuration: '9s' }} />}
+              icon={
+                <Disc3
+                  className={`w-3.5 h-3.5 text-[#d4a373] shrink-0 ${
+                    tanpuraHold || isPlaying ? 'animate-spin' : ''
+                  }`}
+                  style={{ animationDuration: '9s' }}
+                />
+              }
               value={volumes.tanpura}
               muted={mutes.tanpura}
               accent="amber"
@@ -334,7 +399,7 @@ export const PracticeControls: React.FC<PracticeControlsProps> = ({
             />
             <button
               onClick={onToggleTanpuraHold}
-              className={`px-1.5 py-1 rounded-md text-[9px] uppercase tracking-wider font-semibold border transition-colors cursor-pointer ${
+              className={`px-1.5 py-1 rounded-md text-[9px] uppercase tracking-wider font-semibold border transition-colors cursor-pointer shrink-0 ${
                 tanpuraHold
                   ? 'bg-[#d4a373]/25 border-[#d4a373]/70 text-[#e9c46a]'
                   : 'bg-[#141311] border-white/10 text-[#a69f95] hover:text-[#f8f9fa]'
@@ -346,10 +411,10 @@ export const PracticeControls: React.FC<PracticeControlsProps> = ({
           </div>
 
           {/* Layer 3: Backing Tabla Beat */}
-          <div className="pl-2.5 border-l border-white/10">
+          <div className="pt-2 sm:pt-0 sm:pl-2.5 border-t sm:border-t-0 sm:border-l border-white/10 min-w-0">
             <AudioChannelSlider
               label="Tabla Beat"
-              icon={<Drum className="w-3.5 h-3.5 text-[#f4a261]" />}
+              icon={<Drum className="w-3.5 h-3.5 text-[#f4a261] shrink-0" />}
               value={volumes.tabla}
               muted={mutes.tabla}
               accent="amber"
@@ -383,7 +448,7 @@ const AudioChannelSlider: React.FC<AudioChannelSliderProps> = ({
   onToggleMute,
 }) => {
   return (
-    <div className="flex flex-col gap-1 w-[108px]">
+    <div className="flex flex-col gap-1 flex-1 min-w-0 xl:w-[108px] xl:flex-none">
       <div className="flex items-center justify-between gap-1 text-[10px]">
         <span className="flex items-center gap-1 text-[#d0c8be] truncate">
           {icon}

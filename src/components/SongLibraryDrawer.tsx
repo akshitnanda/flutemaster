@@ -88,7 +88,7 @@ export const SongLibraryDrawer: React.FC<SongLibraryDrawerProps> = ({
       />
 
       {/* Drawer Panel */}
-      <aside className="relative z-10 w-full max-w-lg h-full bg-[#161513] border-r border-[#d4a373]/25 shadow-2xl flex flex-col">
+      <aside className="relative z-10 w-full sm:max-w-lg h-[100dvh] bg-[#161513] border-r border-[#d4a373]/25 shadow-2xl flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/8">
           <div className="flex items-center gap-2.5">

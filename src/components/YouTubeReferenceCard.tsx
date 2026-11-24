@@ -46,7 +46,7 @@ export const YouTubeReferenceCard: React.FC<YouTubeReferenceCardProps> = ({
 
   return (
     <aside
-      className="fixed bottom-20 right-4 z-[100] w-[356px] max-w-[calc(100vw-2rem)] rounded-2xl bg-[#181614] border border-[#d4a373]/35 shadow-[0_22px_60px_rgba(0,0,0,0.85)] overflow-hidden"
+      className="fixed bottom-16 inset-x-3 sm:inset-x-auto sm:bottom-20 sm:right-4 z-[100] sm:w-[356px] rounded-2xl bg-[#181614] border border-[#d4a373]/35 shadow-[0_22px_60px_rgba(0,0,0,0.85)] overflow-hidden"
       aria-label="YouTube Reference Rendition"
     >
       {/* Card Header */}

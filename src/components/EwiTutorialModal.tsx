@@ -75,9 +75,9 @@ export const EwiTutorialModal: React.FC<EwiTutorialModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5">
       <div className="fixed inset-0 bg-black/75 backdrop-blur-sm" onClick={onClose} />
 
-      <div className="relative z-10 w-full max-w-4xl max-h-[90vh] flex flex-col rounded-2xl bg-[#181614] border border-[#72efdd]/30 shadow-2xl overflow-hidden">
+      <div className="relative z-10 w-full max-w-4xl max-h-[92dvh] flex flex-col rounded-2xl bg-[#181614] border border-[#72efdd]/30 shadow-2xl overflow-hidden">
         {/* Modal Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-white/10 bg-[#141311]">
+        <div className="flex items-center justify-between px-4 sm:px-5 py-3.5 sm:py-4 border-b border-white/10 bg-[#141311]">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#2a9d8f]/30 to-[#72efdd]/15 border border-[#72efdd]/40 flex items-center justify-center text-[#72efdd]">
               <Sparkles className="w-4.5 h-4.5" />
@@ -106,7 +106,7 @@ export const EwiTutorialModal: React.FC<EwiTutorialModalProps> = ({
         </div>
 
         {/* Navigation Tabs */}
-        <div className="flex items-center gap-1.5 px-5 py-2.5 border-b border-white/8 bg-[#1a1816] overflow-x-auto">
+        <div className="flex items-center gap-1.5 px-4 sm:px-5 py-2.5 border-b border-white/8 bg-[#1a1816] overflow-x-auto no-scrollbar">
           {tabs.map((t) => {
             const active = activeTab === t.id;
             return (

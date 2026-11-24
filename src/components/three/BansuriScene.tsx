@@ -52,7 +52,7 @@ interface CameraPreset {
 
 const CAMERA_PRESETS: Record<InstrumentType, Record<CameraView, CameraPreset>> = {
   bansuri: {
-    'front-facing': { pos: [0.35, 2.75, 4.35], target: [0.35, 0.02, 0.0] },
+    'front-facing': { pos: [0.08, 2.88, 4.75], target: [0.08, 0.02, 0.0] },
     'first-person': { pos: [-3.75, 1.88, 2.15], target: [0.95, 0.0, -0.06] },
     'close-up': { pos: [0.68, 2.18, 2.18], target: [0.68, 0.08, 0.0] },
   },
@@ -67,7 +67,7 @@ const CAMERA_PRESETS: Record<InstrumentType, Record<CameraView, CameraPreset>> =
     'close-up': { pos: [0.0, 1.25, 3.25], target: [0.0, -0.05, 0.35] },
   },
   ewi: {
-    'front-facing': { pos: [0.04, 0.24, 5.78], target: [0.0, -0.06, 0.04] },
+    'front-facing': { pos: [-0.08, 0.22, 5.85], target: [-0.1, -0.08, 0.04] },
     'first-person': { pos: [-2.65, 2.15, 2.05], target: [0.3, -0.25, 0.0] },
     'close-up': { pos: [0.0, 0.16, 3.32], target: [0.0, -0.04, 0.06] },
   },
@@ -92,15 +92,16 @@ const CameraRig: React.FC<CameraRigProps> = ({
   saxLowerActive,
   ewiLowerActive,
 }) => {
-  const { camera } = useThree();
+  const { camera, size } = useThree();
   const controlsRef = useRef<OrbitControlsImpl>(null);
   const isUserDragging = useRef(false);
   const desiredPos = useRef(new THREE.Vector3(...CAMERA_PRESETS.bansuri['front-facing'].pos));
   const desiredTarget = useRef(new THREE.Vector3(...CAMERA_PRESETS.bansuri['front-facing'].target));
+  const offsetVec = useRef(new THREE.Vector3());
 
   useEffect(() => {
     isUserDragging.current = false;
-  }, [cameraView, instrument]);
+  }, [cameraView, instrument, size.width, size.height]);
 
   useFrame((_, delta) => {
     const dt = Math.min(delta, 0.05);
@@ -131,6 +132,28 @@ const CameraRig: React.FC<CameraRigProps> = ({
       }
     }
 
+    // Dynamic viewport aspect-ratio & compact-width adaptation:
+    // Pulls camera cleanly back on mobile/narrow viewports and shifts slightly clear of top-left HUD on 768-1240px!
+    const aspect = size.width / Math.max(1, size.height);
+    const refAspect = cameraView === 'close-up' ? 1.85 : 2.35;
+    let fitScale = 1.0;
+    if (aspect < refAspect) {
+      fitScale = Math.min(2.35, Math.max(1.0, Math.pow(refAspect / Math.max(0.55, aspect), 0.74)));
+    }
+    if (cameraView === 'front-facing' && size.width >= 640 && size.width < 1260) {
+      fitScale = Math.max(fitScale, 1.12);
+      if (instrument === 'ewi') {
+        desiredTarget.current.x -= 0.32;
+        desiredPos.current.x -= 0.32;
+      }
+    }
+    if (fitScale > 1.001) {
+      offsetVec.current.subVectors(desiredPos.current, desiredTarget.current).multiplyScalar(fitScale);
+      // Gently nudge look target slightly upward so the 3D instrument drops cleanly clear of top-left HUD!
+      desiredTarget.current.y += (fitScale - 1) * 0.22;
+      desiredPos.current.copy(desiredTarget.current).add(offsetVec.current);
+    }
+
     if (!isUserDragging.current) {
       const lerpAlpha = 1 - Math.exp(-5.0 * dt);
       camera.position.lerp(desiredPos.current, lerpAlpha);
@@ -147,7 +170,7 @@ const CameraRig: React.FC<CameraRigProps> = ({
       makeDefault
       enablePan={false}
       minDistance={1.6}
-      maxDistance={9.5}
+      maxDistance={14.5}
       minPolarAngle={0.18}
       maxPolarAngle={Math.PI * 0.62}
       onStart={() => {
@@ -443,11 +466,11 @@ export const BansuriScene: React.FC<BansuriSceneProps> = ({
       {/* ====================================================================
           HUD OVERLAY — TOP LEFT: Active Swara + Instrument-Specific 2D Reference
           ==================================================================== */}
-      <div className="pointer-events-none absolute top-3 left-3.5 flex flex-col gap-2 z-10 max-w-[325px]">
-        <div className="pointer-events-auto flex items-center gap-3 px-3.5 py-2 rounded-xl bg-[#181614]/88 backdrop-blur-md border border-[#d4a373]/20 shadow-lg">
+      <div className="pointer-events-none absolute top-2 left-2 sm:top-3 sm:left-3.5 flex flex-col gap-1.5 sm:gap-2 z-10 max-w-[205px] sm:max-w-[310px]">
+        <div className="pointer-events-auto flex items-center gap-2 sm:gap-3 px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-[#181614]/88 backdrop-blur-md border border-[#d4a373]/20 shadow-lg">
           {/* Active Swara Glyph Pill */}
           <div
-            className={`w-12 h-12 rounded-lg flex flex-col items-center justify-center shrink-0 border transition-all ${
+            className={`w-9 h-9 sm:w-12 sm:h-12 rounded-lg flex flex-col items-center justify-center shrink-0 border transition-all ${
               isHighlightedWarning
                 ? 'bg-[#f4a261]/15 border-[#f4a261]/60 text-[#f4a261] shadow-[0_0_16px_rgba(244,162,97,0.22)]'
                 : instrument === 'harmonica' && harmonicaTab.action === 'draw'
@@ -459,18 +482,18 @@ export const BansuriScene: React.FC<BansuriSceneProps> = ({
               swara={activeSwara}
               octave={activeOctave}
               notationStyle={notationStyle}
-              size="lg"
+              size="md"
             />
           </div>
 
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5">
-              <span className="text-sm font-semibold text-[#f8f9fa] truncate">
+              <span className="text-xs sm:text-sm font-semibold text-[#f8f9fa] truncate">
                 {swaraMeta.isKomal ? 'Komal ' : swaraMeta.isTivra ? 'Tivra ' : 'Shuddha '}
                 {swaraMeta.fullBase}
               </span>
               <span
-                className={`font-hindi text-xs text-[#d4a373] ${
+                className={`hidden sm:inline font-hindi text-xs text-[#d4a373] ${
                   swaraMeta.isKomal ? 'underline decoration-[#f4a261] underline-offset-2' : ''
                 }`}
               >
@@ -478,28 +501,28 @@ export const BansuriScene: React.FC<BansuriSceneProps> = ({
                 {swaraMeta.isTivra ? '′' : ''})
               </span>
             </div>
-            <div className="text-[11px] text-[#a69f95] flex items-center gap-2 mt-0.5">
-              <span>{getOctaveLabel(activeOctave).split(' ')[0]} Saptak</span>
+            <div className="text-[10px] sm:text-[11px] text-[#a69f95] flex items-center gap-1.5 sm:gap-2 mt-0.5 truncate">
+              <span className="truncate">{getOctaveLabel(activeOctave).split(' ')[0]}</span>
               <span className="text-[#d4a373]/40">•</span>
-              <span className="font-mono-tech text-[#d4a373]">
+              <span className="font-mono-tech text-[#d4a373] truncate">
                 {instrument === 'saxophone'
                   ? `Sax ${saxFingering.writtenNote}`
                   : instrument === 'harmonica'
                   ? `Tab ${harmonicaTab.compactTab}`
                   : instrument === 'ewi'
-                  ? `EDA ${ewiFingering.writtenNote} · TR ${formatTranspose(effectiveEwiTranspose)}`
-                  : `${freqHz.toFixed(1)} Hz`}
+                  ? `${ewiFingering.writtenNote} · TR ${formatTranspose(effectiveEwiTranspose)}`
+                  : `${freqHz.toFixed(0)} Hz`}
               </span>
             </div>
 
             {/* INSTRUMENT-SPECIFIC 2D REFERENCE STRIP */}
             {instrument === 'bansuri' && (
-              <div className="flex items-center gap-1.5 mt-1.5" title="6 Main Bansuri Holes (L1-L3 · R1-R3)">
+              <div className="flex items-center gap-1 sm:gap-1.5 mt-1.5" title="6 Main Bansuri Holes (L1-L3 · R1-R3)">
                 {bansuriFingering.holes.slice(0, 6).map((h, i) => (
                   <React.Fragment key={i}>
-                    {i === 3 && <span className="w-1.5 h-[1px] bg-[#d4a373]/30" />}
+                    {i === 3 && <span className="w-1 sm:w-1.5 h-[1px] bg-[#d4a373]/30" />}
                     <span
-                      className={`relative w-3.5 h-3.5 rounded-full border transition-all ${
+                      className={`relative w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 rounded-full border transition-all ${
                         h === 1
                           ? 'bg-[#2a9d8f] border-[#e9c46a] shadow-[0_0_6px_rgba(42,157,143,0.75)]'
                           : h === 0.5
@@ -523,9 +546,9 @@ export const BansuriScene: React.FC<BansuriSceneProps> = ({
             )}
 
             {instrument === 'saxophone' && (
-              <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+              <div className="flex flex-wrap items-center gap-1 sm:gap-1.5 mt-1.5">
                 <span
-                  className={`px-1.5 py-[1px] rounded text-[9px] font-mono-tech font-bold border ${
+                  className={`px-1 sm:px-1.5 py-[1px] rounded text-[8px] sm:text-[9px] font-mono-tech font-bold border ${
                     saxFingering.octaveKey
                       ? 'bg-[#f4a261] text-[#121212] border-[#fff0d9]'
                       : 'bg-[#121212] text-[#a69f95] border-white/15'
@@ -538,7 +561,7 @@ export const BansuriScene: React.FC<BansuriSceneProps> = ({
                   <React.Fragment key={i}>
                     {i === 3 && <span className="w-1 h-[1px] bg-[#d4a373]/35" />}
                     <span
-                      className={`w-3.5 h-3.5 rounded-full border transition-all ${
+                      className={`w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 rounded-full border transition-all ${
                         pressed
                           ? 'bg-[#2a9d8f] border-[#e9c46a] shadow-[0_0_6px_rgba(42,157,143,0.75)]'
                           : 'bg-[#121212] border-[#d4a373]/35'
@@ -593,9 +616,9 @@ export const BansuriScene: React.FC<BansuriSceneProps> = ({
             )}
 
             {instrument === 'ewi' && (
-              <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+              <div className="flex flex-wrap items-center gap-1 sm:gap-1.5 mt-1.5">
                 <span
-                  className={`px-1.5 py-[1px] rounded text-[9px] font-mono-tech font-bold border ${
+                  className={`px-1 sm:px-1.5 py-[1px] rounded text-[8px] sm:text-[9px] font-mono-tech font-bold border ${
                     ewiFingering.octaveShift === 1
                       ? 'bg-[#f4a261] text-[#121212] border-[#fff0d9]'
                       : ewiFingering.octaveShift === -1
@@ -612,9 +635,9 @@ export const BansuriScene: React.FC<BansuriSceneProps> = ({
                 </span>
                 {ewiFingering.mainPads.map((touched, i) => (
                   <React.Fragment key={i}>
-                    {i === 3 && <span className="w-1 h-[1px] bg-[#72efdd]/35" />}
+                    {i === 3 && <span className="w-0.5 sm:w-1 h-[1px] bg-[#72efdd]/35" />}
                     <span
-                      className={`w-3.5 h-3.5 rounded-full border transition-all ${
+                      className={`w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 rounded-full border transition-all ${
                         touched
                           ? 'bg-[#2a9d8f] border-[#72efdd] shadow-[0_0_6px_rgba(114,239,221,0.75)]'
                           : 'bg-[#121212] border-white/25'
@@ -643,7 +666,9 @@ export const BansuriScene: React.FC<BansuriSceneProps> = ({
 
         {/* Breath / Register / Blow-Draw Cue Pill */}
         <div
-          className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg backdrop-blur-md border text-[11px] w-fit transition-all ${
+          className={`${
+            isBreathPause ? 'inline-flex' : 'hidden sm:inline-flex'
+          } items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg backdrop-blur-md border text-[10px] sm:text-[11px] w-fit max-w-full transition-all ${
             isBreathPause
               ? 'bg-[#2a9d8f]/22 border-[#2a9d8f]/60 text-[#72efdd]'
               : instrument === 'harmonica' && harmonicaTab.action === 'draw'
@@ -710,17 +735,17 @@ export const BansuriScene: React.FC<BansuriSceneProps> = ({
       {/* ====================================================================
           HUD OVERLAY — TOP RIGHT: Camera Angle Switcher & Visual Toggles
           ==================================================================== */}
-      <div className="absolute top-3 right-3.5 flex flex-col items-end gap-2 z-10">
-        <div className="flex items-center gap-1 p-1 rounded-xl bg-[#181614]/88 backdrop-blur-md border border-[#d4a373]/20 shadow-lg">
-          <span className="hidden sm:flex items-center gap-1 px-2 text-[10px] uppercase tracking-wider text-[#a69f95]">
+      <div className="absolute top-2 right-2 sm:top-3 sm:right-3.5 flex flex-col items-end gap-1.5 sm:gap-2 z-10">
+        <div className="flex items-center gap-0.5 sm:gap-1 p-0.5 sm:p-1 rounded-xl bg-[#181614]/88 backdrop-blur-md border border-[#d4a373]/20 shadow-lg">
+          <span className="hidden md:flex items-center gap-1 px-2 text-[10px] uppercase tracking-wider text-[#a69f95]">
             <Eye className="w-3 h-3 text-[#d4a373]" />
             POV
           </span>
           {(
             [
-              { id: 'first-person', label: 'First-Person', keyHint: '1' },
-              { id: 'front-facing', label: 'Front / Mirror', keyHint: '2' },
-              { id: 'close-up', label: 'Close-Up', keyHint: '3' },
+              { id: 'first-person', label: 'First-Person', short: '1st', keyHint: '1' },
+              { id: 'front-facing', label: 'Front / Mirror', short: 'Front', keyHint: '2' },
+              { id: 'close-up', label: 'Close-Up', short: 'Zoom', keyHint: '3' },
             ] as const
           ).map((cam) => {
             const active = cameraView === cam.id;
@@ -728,24 +753,25 @@ export const BansuriScene: React.FC<BansuriSceneProps> = ({
               <button
                 key={cam.id}
                 onClick={() => onCameraViewChange(cam.id)}
-                className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+                className={`px-2 sm:px-2.5 py-1 rounded-lg text-[11px] sm:text-xs font-medium transition-all cursor-pointer whitespace-nowrap ${
                   active
                     ? 'bg-[#d4a373] text-[#121212] font-semibold shadow-[0_0_12px_rgba(212,163,115,0.35)]'
                     : 'text-[#d0c8be] hover:text-[#f8f9fa] hover:bg-white/5'
                 }`}
                 title={`Switch to ${cam.label} camera (Key ${cam.keyHint})`}
               >
-                {cam.label}
+                <span className="sm:hidden">{cam.short}</span>
+                <span className="hidden sm:inline">{cam.label}</span>
               </button>
             );
           })}
         </div>
 
         {/* Compact Studio Layer Toggles */}
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1 sm:gap-1.5">
           <button
             onClick={() => setShowHands((v) => !v)}
-            className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] backdrop-blur-md border transition-colors cursor-pointer ${
+            className={`flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-lg text-[10px] sm:text-[11px] backdrop-blur-md border transition-colors cursor-pointer ${
               showHands
                 ? 'bg-[#181614]/85 border-[#d4a373]/30 text-[#e9c46a]'
                 : 'bg-[#181614]/65 border-white/10 text-[#a69f95]'
@@ -753,11 +779,11 @@ export const BansuriScene: React.FC<BansuriSceneProps> = ({
             title="Toggle 3D Translucent Hands"
           >
             <Hand className="w-3 h-3" />
-            <span>Hands</span>
+            <span className="hidden sm:inline">Hands</span>
           </button>
           <button
             onClick={() => setShowLabels((v) => !v)}
-            className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] backdrop-blur-md border transition-colors cursor-pointer ${
+            className={`flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-lg text-[10px] sm:text-[11px] backdrop-blur-md border transition-colors cursor-pointer ${
               showLabels
                 ? 'bg-[#181614]/85 border-[#d4a373]/30 text-[#e9c46a]'
                 : 'bg-[#181614]/65 border-white/10 text-[#a69f95]'
@@ -765,20 +791,21 @@ export const BansuriScene: React.FC<BansuriSceneProps> = ({
             title="Toggle Hole / Key Numbers"
           >
             <Hash className="w-3 h-3" />
-            <span>
+            <span className="hidden sm:inline">
               {instrument === 'saxophone' ? 'Keys' : instrument === 'ewi' ? 'Pads' : 'Holes'}
             </span>
           </button>
           <button
             onClick={() => setShowScaleBar((v) => !v)}
-            className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] backdrop-blur-md border transition-colors cursor-pointer ${
+            className={`flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-lg text-[10px] sm:text-[11px] backdrop-blur-md border transition-colors cursor-pointer ${
               showScaleBar
                 ? 'bg-[#2a9d8f]/25 border-[#2a9d8f]/60 text-[#72efdd]'
                 : 'bg-[#181614]/85 border-white/10 text-[#d0c8be] hover:border-[#d4a373]/35'
             }`}
             title="Open Interactive Sargam Sandbox to test any note in 3D"
           >
-            <span>Test Swaras</span>
+            <span className="sm:hidden">Swaras</span>
+            <span className="hidden sm:inline">Test Swaras</span>
           </button>
         </div>
       </div>
@@ -786,9 +813,9 @@ export const BansuriScene: React.FC<BansuriSceneProps> = ({
       {/* ====================================================================
           HUD OVERLAY — BOTTOM: Instrument Legend, Coaching Badge & Scale Chip
           ==================================================================== */}
-      <div className="pointer-events-none absolute bottom-2.5 inset-x-3.5 flex items-end justify-between gap-2 z-10">
+      <div className="pointer-events-none absolute bottom-2 sm:bottom-2.5 inset-x-2.5 sm:inset-x-3.5 flex items-end justify-between gap-2 z-10">
         {/* Instrument-Specific Visual Legend */}
-        <div className="hidden md:flex items-center gap-3 px-3 py-1 rounded-lg bg-[#141311]/82 backdrop-blur-md border border-white/8 text-[11px] text-[#a69f95]">
+        <div className="hidden lg:flex items-center gap-3 px-3 py-1 rounded-lg bg-[#141311]/82 backdrop-blur-md border border-white/8 text-[11px] text-[#a69f95] shrink-0">
           {instrument === 'bansuri' && (
             <>
               <span className="flex items-center gap-1.5">
@@ -862,14 +889,14 @@ export const BansuriScene: React.FC<BansuriSceneProps> = ({
 
         {/* Dynamic Coaching / Pitch Control Badge */}
         {activeCoachingTip && (
-          <div className="pointer-events-auto mx-auto flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#261a10]/92 backdrop-blur-md border border-[#f4a261]/55 text-[#f7c08a] text-xs shadow-[0_0_20px_rgba(244,162,97,0.2)]">
-            <AlertTriangle className="w-3.5 h-3.5 text-[#f4a261] shrink-0" />
-            <span>{activeCoachingTip}</span>
+          <div className="pointer-events-auto mx-auto flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full bg-[#261a10]/92 backdrop-blur-md border border-[#f4a261]/55 text-[#f7c08a] text-[10px] sm:text-xs shadow-[0_0_20px_rgba(244,162,97,0.2)] max-w-[92vw] sm:max-w-lg min-w-0">
+            <AlertTriangle className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#f4a261] shrink-0" />
+            <span className="truncate">{activeCoachingTip}</span>
           </div>
         )}
 
         {/* Active Instrument Tuning Chip */}
-        <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#141311]/82 backdrop-blur-md border border-[#d4a373]/20 text-[11px] text-[#d4a373]">
+        <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#141311]/82 backdrop-blur-md border border-[#d4a373]/20 text-[11px] text-[#d4a373] shrink-0">
           <span className="w-1.5 h-1.5 rounded-full bg-[#d4a373]" />
           {instrument === 'bansuri' && (
             <>

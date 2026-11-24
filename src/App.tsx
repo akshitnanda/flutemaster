@@ -568,17 +568,17 @@ export function App() {
   const instMeta = INSTRUMENT_META[instrument];
 
   return (
-    <div className="h-screen w-screen flex flex-col bg-[#121212] text-[#f8f9fa] overflow-hidden">
+    <div className="min-h-[100dvh] lg:h-[100dvh] w-full flex flex-col bg-[#121212] text-[#f8f9fa] lg:overflow-hidden">
       {/* ====================================================================
-          STUDIO TOP NAVIGATION BAR (Brand · 3-Instrument Switcher · Song · Guide)
+          STUDIO TOP NAVIGATION BAR (Responsive 2-tier on mobile · 1-row on md+)
           ==================================================================== */}
-      <header className="h-13 px-3.5 flex items-center justify-between gap-2.5 bg-[#171513] border-b border-[#d4a373]/18 shrink-0 z-30">
+      <header className="px-2.5 sm:px-3.5 py-2 md:py-0 md:h-13 flex flex-wrap md:flex-nowrap items-center justify-between gap-2 bg-[#171513] border-b border-[#d4a373]/18 shrink-0 z-30">
         {/* Brand Identity */}
-        <div className="flex items-center gap-2 shrink-0">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#d4a373] to-[#9b6a38] flex items-center justify-center shadow-[0_0_16px_rgba(212,163,115,0.3)]">
+        <div className="order-1 flex items-center gap-2 shrink-0">
+          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-br from-[#d4a373] to-[#9b6a38] flex items-center justify-center shadow-[0_0_16px_rgba(212,163,115,0.3)]">
             <svg
               viewBox="0 0 24 24"
-              className="w-5 h-5 text-[#121212]"
+              className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-[#121212]"
               fill="none"
               stroke="currentColor"
               strokeWidth="2.2"
@@ -591,29 +591,31 @@ export function App() {
           </div>
           <div className="leading-tight">
             <div className="flex items-center gap-1.5">
-              <span className="font-bold text-sm tracking-tight text-[#f8f9fa]">FluteMaster</span>
+              <span className="font-bold text-xs sm:text-sm tracking-tight text-[#f8f9fa]">
+                FluteMaster
+              </span>
               <span className="hidden xl:inline-block px-1.5 py-[1px] rounded bg-[#d4a373]/15 border border-[#d4a373]/35 text-[9px] font-semibold uppercase tracking-wider text-[#e9c46a]">
                 Wind Studio
               </span>
             </div>
-            <p className="hidden lg:block text-[10px] text-[#a69f95] truncate max-w-[215px]">
+            <p className="hidden xl:block text-[10px] text-[#a69f95] truncate max-w-[205px]">
               {instMeta.subtitle}
             </p>
           </div>
         </div>
 
-        {/* Sleek 4-Instrument Studio Switcher (Bansuri · Saxophone · Mouth Organ · EWI) */}
+        {/* Sleek 4-Instrument Studio Switcher (Full-width row 2 on < md · centered pill on md+) */}
         <div
-          className="flex items-center p-0.5 rounded-xl bg-[#121212] border border-[#d4a373]/25 shrink-0"
+          className="order-4 md:order-2 grid grid-cols-4 md:flex items-center p-0.5 rounded-xl bg-[#121212] border border-[#d4a373]/25 w-full md:w-auto shrink-0"
           role="tablist"
           aria-label="Choose 3D Wind Instrument"
         >
           {(
             [
-              { id: 'bansuri', label: 'Bansuri' },
-              { id: 'saxophone', label: 'Saxophone' },
-              { id: 'harmonica', label: 'Mouth Organ' },
-              { id: 'ewi', label: 'EWI' },
+              { id: 'bansuri', label: 'Bansuri', short: 'Bansuri' },
+              { id: 'saxophone', label: 'Saxophone', short: 'Sax' },
+              { id: 'harmonica', label: 'Mouth Organ', short: 'Organ' },
+              { id: 'ewi', label: 'EWI', short: 'EWI' },
             ] as const
           ).map((item) => {
             const active = instrument === item.id;
@@ -623,7 +625,7 @@ export function App() {
                 role="tab"
                 aria-selected={active}
                 onClick={() => handleSelectInstrument(item.id)}
-                className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer whitespace-nowrap flex items-center gap-1 ${
+                className={`px-2 lg:px-2.5 py-1.5 md:py-1 rounded-lg text-[11px] sm:text-xs font-medium transition-all cursor-pointer whitespace-nowrap flex items-center justify-center gap-1 ${
                   active
                     ? 'bg-[#2a9d8f] text-[#f8f9fa] font-semibold shadow-[0_0_12px_rgba(42,157,143,0.45)]'
                     : 'text-[#b5aea5] hover:text-[#f8f9fa] hover:bg-white/[0.05]'
@@ -631,28 +633,29 @@ export function App() {
                 title={`Switch 3D Instrument to ${item.label} (Key I to cycle)`}
               >
                 {item.id === 'ewi' && (
-                  <Sparkles className={`w-3 h-3 ${active ? 'text-[#e9c46a]' : 'text-[#72efdd]/80'}`} />
+                  <Sparkles className={`w-3 h-3 shrink-0 ${active ? 'text-[#e9c46a]' : 'text-[#72efdd]/80'}`} />
                 )}
-                <span>{item.label}</span>
+                <span className="sm:hidden">{item.short}</span>
+                <span className="hidden sm:inline">{item.label}</span>
               </button>
             );
           })}
         </div>
 
-        {/* Active Song Selector Pill (Opens Curated Song Library) */}
+        {/* Active Song Selector Pill (Fluid flex-1 on mobile · cleanly bounded on desktop) */}
         <button
           onClick={() => setLibraryOpen(true)}
-          className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-[#201e1b] hover:bg-[#272420] border border-[#d4a373]/28 hover:border-[#d4a373]/55 transition-all cursor-pointer max-w-sm min-w-0 group"
+          className="order-2 md:order-3 flex items-center gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-[#201e1b] hover:bg-[#272420] border border-[#d4a373]/28 hover:border-[#d4a373]/55 transition-all cursor-pointer flex-1 md:flex-initial md:max-w-[230px] lg:max-w-xs xl:max-w-sm min-w-0 group"
           title="Browse Bollywood Song Library (Shortcut: L)"
         >
-          <Library className="w-4 h-4 text-[#d4a373] shrink-0" />
+          <Library className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#d4a373] shrink-0" />
           <div className="text-left min-w-0 flex-1">
             <div className="flex items-center gap-1.5">
               <span className="text-xs sm:text-sm font-semibold text-[#f8f9fa] truncate group-hover:text-[#e9c46a] transition-colors">
                 {activeSong.title}
               </span>
               <span
-                className={`hidden md:inline-block px-1.5 py-[1px] rounded text-[9px] font-medium shrink-0 border ${
+                className={`hidden lg:inline-block px-1.5 py-[1px] rounded text-[9px] font-medium shrink-0 border ${
                   bpmOverride !== null
                     ? 'bg-[#e9c46a]/20 border-[#e9c46a]/55 text-[#e9c46a]'
                     : 'bg-[#2a9d8f]/20 border-[#2a9d8f]/45 text-[#72efdd]'
@@ -661,25 +664,25 @@ export function App() {
                 {Math.round(baseBpm * tempoRate)} BPM
               </span>
             </div>
-            <div className="hidden sm:flex items-center gap-1.5 text-[10px] text-[#a69f95] truncate">
-              <span>
+            <div className="hidden sm:flex items-center gap-1 text-[10px] text-[#a69f95] truncate">
+              <span className="truncate">
                 {activeSong.movie} ({activeSong.year})
               </span>
               <span>·</span>
-              <span>{activeSong.scale.name}</span>
+              <span className="shrink-0">{activeSong.scale.name}</span>
             </div>
           </div>
-          <ChevronDown className="w-4 h-4 text-[#a69f95] group-hover:text-[#f8f9fa] shrink-0" />
-          <span className="hidden xl:inline-block px-1.5 py-0.5 rounded-md bg-[#d4a373]/15 border border-[#d4a373]/35 text-[10px] font-mono-tech font-semibold text-[#e9c46a] shrink-0">
+          <ChevronDown className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#a69f95] group-hover:text-[#f8f9fa] shrink-0" />
+          <span className="hidden sm:inline-block px-1.5 py-0.5 rounded-md bg-[#d4a373]/15 border border-[#d4a373]/35 text-[10px] font-mono-tech font-semibold text-[#e9c46a] shrink-0">
             {allSongs.length}
           </span>
         </button>
 
         {/* Right Utility Actions: YouTube Reference + Guide */}
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="order-3 md:order-4 flex items-center gap-1.5 shrink-0">
           <button
             onClick={() => setYoutubeRefOpen((v) => !v)}
-            className={`relative flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs transition-all cursor-pointer shrink-0 ${
+            className={`relative flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg border text-xs transition-all cursor-pointer shrink-0 ${
               youtubeRefOpen
                 ? 'bg-rose-500/20 border-rose-400/55 text-rose-200 shadow-[0_0_14px_rgba(244,63,94,0.22)]'
                 : 'bg-[#201e1b] hover:bg-[#2a2723] border-white/10 text-[#d0c8be] hover:text-[#f8f9fa]'
@@ -687,7 +690,7 @@ export function App() {
             title="Open real YouTube rendition & cover comparison player"
           >
             <PlayCircle className={`w-3.5 h-3.5 ${youtubeRefOpen ? 'text-rose-400' : 'text-rose-400/90'}`} />
-            <span className="hidden md:inline">YouTube Ref</span>
+            <span className="hidden lg:inline">YouTube Ref</span>
             {activeSong.youtubeId && (
               <span
                 className="w-1.5 h-1.5 rounded-full bg-[#2a9d8f]"
@@ -698,24 +701,26 @@ export function App() {
 
           <button
             onClick={() => setGuideOpen(true)}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#201e1b] hover:bg-[#2a2723] border border-white/10 text-xs text-[#d0c8be] hover:text-[#f8f9fa] transition-colors cursor-pointer shrink-0"
+            className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg bg-[#201e1b] hover:bg-[#2a2723] border border-white/10 text-xs text-[#d0c8be] hover:text-[#f8f9fa] transition-colors cursor-pointer shrink-0"
             title="Sargam, Instrument Technique & Practice Guide"
           >
             <BookOpen className="w-3.5 h-3.5 text-[#d4a373]" />
-            <span className="hidden sm:inline">Guide</span>
+            <span className="hidden lg:inline">Guide</span>
           </button>
         </div>
       </header>
 
       {/* ====================================================================
-          EASTAR EDA-100 HARDWARE CONTROL BAR (Only visible when EWI is active!)
+          EASTAR EDA-100 HARDWARE CONTROL BAR (Single-row swipeable on narrow screens!)
           ==================================================================== */}
       {instrument === 'ewi' && (
-        <div className="px-3.5 py-1.5 bg-[#121719] border-b border-[#72efdd]/22 flex flex-wrap items-center justify-between gap-2 text-[11px] shrink-0 z-20">
-          <div className="flex flex-wrap items-center gap-2">
+        <div className="px-2.5 sm:px-3.5 py-1.5 bg-[#121719] border-b border-[#72efdd]/22 flex items-center justify-between gap-1.5 xl:gap-2 text-[11px] shrink-0 z-20 overflow-x-auto no-scrollbar">
+          <div className="flex items-center gap-1.5 xl:gap-2 shrink-0">
             {/* Fingering Mode (01 Sax / 02 Flute) */}
-            <div className="flex items-center gap-1">
-              <span className="text-[10px] font-mono-tech uppercase text-[#8ea5ab]">Fingering</span>
+            <div className="flex items-center gap-1 shrink-0">
+              <span className="hidden xl:inline text-[10px] font-mono-tech uppercase text-[#8ea5ab]">
+                Fingering
+              </span>
               <div className="flex rounded-md bg-[#0b0e10] p-0.5 border border-white/10">
                 {(
                   [
@@ -726,7 +731,7 @@ export function App() {
                   <button
                     key={m.id}
                     onClick={() => handleUpdateEwiSettings({ fingeringMode: m.id })}
-                    className={`px-2 py-0.5 rounded text-[10px] font-mono-tech font-semibold cursor-pointer transition-all ${
+                    className={`px-2 py-0.5 rounded text-[10px] font-mono-tech font-semibold cursor-pointer transition-all whitespace-nowrap ${
                       ewiSettings.fingeringMode === m.id
                         ? 'bg-[#2a9d8f] text-[#f8f9fa]'
                         : 'text-[#9aa8b0] hover:text-[#f8f9fa]'
@@ -739,14 +744,16 @@ export function App() {
             </div>
 
             {/* Studio Voice (matches EDA-100 Tone slots) */}
-            <div className="flex items-center gap-1 pl-2 border-l border-white/10">
-              <span className="text-[10px] font-mono-tech uppercase text-[#8ea5ab]">Tone</span>
+            <div className="flex items-center gap-1 pl-1.5 xl:pl-2 border-l border-white/10 shrink-0">
+              <span className="hidden xl:inline text-[10px] font-mono-tech uppercase text-[#8ea5ab]">
+                Tone
+              </span>
               <div className="flex rounded-md bg-[#0b0e10] p-0.5 border border-white/10">
                 {EWI_STUDIO_VOICES.map((v) => (
                   <button
                     key={v.id}
                     onClick={() => handleUpdateEwiSettings({ voice: v.id })}
-                    className={`px-2 py-0.5 rounded text-[10px] font-mono-tech cursor-pointer transition-all whitespace-nowrap ${
+                    className={`px-1.5 xl:px-2 py-0.5 rounded text-[10px] font-mono-tech cursor-pointer transition-all whitespace-nowrap ${
                       ewiSettings.voice === v.id
                         ? 'bg-[#e9c46a] text-[#121212] font-bold'
                         : 'text-[#9aa8b0] hover:text-[#f8f9fa]'
@@ -759,9 +766,12 @@ export function App() {
               </div>
             </div>
 
-            {/* Breath Sensitivity (01 / 02 / 03) */}
-            <div className="hidden lg:flex items-center gap-1 pl-2 border-l border-white/10">
-              <span className="text-[10px] font-mono-tech uppercase text-[#8ea5ab]">Breath</span>
+            {/* Breath Sensitivity (01 / 02 / 03) — accessible on ALL screen sizes! */}
+            <div className="flex items-center gap-1 pl-1.5 xl:pl-2 border-l border-white/10 shrink-0">
+              <span className="text-[10px] font-mono-tech uppercase text-[#8ea5ab]">
+                <span className="xl:hidden">BR</span>
+                <span className="hidden xl:inline">Breath</span>
+              </span>
               <div className="flex rounded-md bg-[#0b0e10] p-0.5 border border-white/10">
                 {([1, 2, 3] as const).map((lvl) => (
                   <button
@@ -780,9 +790,9 @@ export function App() {
               </div>
             </div>
 
-            {/* Reverb Depth (0-30) */}
-            <div className="hidden xl:flex items-center gap-1.5 pl-2 border-l border-white/10">
-              <span className="text-[10px] font-mono-tech uppercase text-[#8ea5ab]">
+            {/* Reverb Depth (0-30) — accessible on ALL screen sizes! */}
+            <div className="flex items-center gap-1.5 pl-2 border-l border-white/10 shrink-0">
+              <span className="text-[10px] font-mono-tech uppercase text-[#8ea5ab] whitespace-nowrap">
                 Rev {String(ewiSettings.reverbLevel).padStart(2, '0')}
               </span>
               <input
@@ -794,7 +804,7 @@ export function App() {
                 onChange={(e) =>
                   handleUpdateEwiSettings({ reverbLevel: parseInt(e.target.value, 10) })
                 }
-                className="studio-slider studio-slider-jade w-16"
+                className="studio-slider studio-slider-jade w-14 sm:w-16"
                 aria-label="EDA-100 Reverb Level"
               />
             </div>
@@ -804,7 +814,7 @@ export function App() {
               onClick={() =>
                 handleUpdateEwiSettings({ pitchBendEnabled: !ewiSettings.pitchBendEnabled })
               }
-              className={`px-2 py-0.5 rounded-md border text-[10px] font-mono-tech font-semibold cursor-pointer transition-all ${
+              className={`px-2 py-0.5 rounded-md border text-[10px] font-mono-tech font-semibold cursor-pointer transition-all whitespace-nowrap shrink-0 ${
                 ewiSettings.pitchBendEnabled
                   ? 'bg-[#e9c46a]/18 border-[#e9c46a]/55 text-[#e9c46a]'
                   : 'bg-[#0b0e10] border-white/10 text-[#9aa8b0]'
@@ -816,13 +826,13 @@ export function App() {
           </div>
 
           {/* Right side: Auto-Transpose Readout + Web MIDI + Complete EDA-100 Guide */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0 pl-2">
             {/* Live Per-Song Transpose Indicator */}
             <div
-              className="hidden sm:flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#1a1813] border border-[#e9c46a]/35 text-[10px] font-mono-tech"
+              className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#1a1813] border border-[#e9c46a]/35 text-[10px] font-mono-tech whitespace-nowrap shrink-0"
               title="Dial this exact Transpose value on your physical Eastar EDA-100 to play this song in concert key"
             >
-              <span className="text-[#a69f95]">EDA Trans:</span>
+              <span className="text-[#a69f95]">Trans:</span>
               <span className="font-bold text-[#e9c46a]">
                 {formatTranspose(effectiveEwiTranspose)}
               </span>
@@ -831,33 +841,34 @@ export function App() {
             {/* USB / BT MIDI Connect */}
             <button
               onClick={handleToggleMidi}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-[10px] font-mono-tech font-semibold cursor-pointer transition-all ${
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-[10px] font-mono-tech font-semibold cursor-pointer transition-all whitespace-nowrap shrink-0 ${
                 liveMidi.connected
                   ? 'bg-[#2a9d8f]/25 border-[#72efdd]/60 text-[#72efdd]'
                   : 'bg-[#171e20] border-white/12 text-[#b8cbd0] hover:border-[#72efdd]/45 hover:text-[#f8f9fa]'
               }`}
               title="Connect your physical Eastar EDA-100 via USB-C or Bluetooth MIDI"
             >
-              <Usb className="w-3 h-3" />
-              <span>{liveMidi.connected ? `MIDI: ${liveMidi.activeSwaraLabel ?? 'Live'}` : 'Connect MIDI'}</span>
+              <Usb className="w-3 h-3 shrink-0" />
+              <span>{liveMidi.connected ? `MIDI: ${liveMidi.activeSwaraLabel ?? 'Live'}` : 'MIDI'}</span>
             </button>
 
             {/* Full Interactive Eastar EDA-100 Tutorial Button */}
             <button
               onClick={() => setEwiGuideOpen(true)}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#2a9d8f]/22 hover:bg-[#2a9d8f]/35 border border-[#72efdd]/50 text-[#72efdd] text-[11px] font-semibold cursor-pointer transition-all shadow-[0_0_12px_rgba(114,239,221,0.18)]"
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#2a9d8f]/22 hover:bg-[#2a9d8f]/35 border border-[#72efdd]/50 text-[#72efdd] text-[11px] font-semibold cursor-pointer transition-all shadow-[0_0_12px_rgba(114,239,221,0.18)] whitespace-nowrap shrink-0"
             >
-              <Sparkles className="w-3.5 h-3.5 text-[#e9c46a]" />
-              <span>EDA-100 Tutorial &amp; Settings</span>
+              <Sparkles className="w-3.5 h-3.5 text-[#e9c46a] shrink-0" />
+              <span className="xl:hidden">EDA Guide</span>
+              <span className="hidden xl:inline">EDA-100 Tutorial &amp; Settings</span>
             </button>
           </div>
         </div>
       )}
 
       {/* ====================================================================
-          UPPER HALF (~54%): 3D INTERACTIVE INSTRUMENT STAGE (Bansuri / Sax / Mouth Organ / EWI)
+          UPPER STAGE: 3D INTERACTIVE INSTRUMENT (Responsive dvh on mobile · flex-[54] on lg+)
           ==================================================================== */}
-      <section className="relative isolate z-0 flex-[54] min-h-[250px] w-full">
+      <section className="relative isolate z-0 h-[44dvh] min-h-[260px] sm:h-[47dvh] lg:h-auto lg:flex-[54] lg:min-h-[240px] w-full">
         <StudioErrorBoundary variant="stage">
           <BansuriScene
             instrument={instrument}
@@ -878,9 +889,9 @@ export function App() {
       </section>
 
       {/* ====================================================================
-          LOWER HALF (~34%): SCROLLING SARGAM NOTE HIGHWAY + INSTRUMENT TABS
+          LOWER STAGE: SCROLLING SARGAM NOTE HIGHWAY + INSTRUMENT TABS
           ==================================================================== */}
-      <section className="relative flex-[34] min-h-[200px] w-full">
+      <section className="relative h-[220px] sm:h-[235px] lg:h-auto lg:flex-[34] lg:min-h-[195px] w-full">
         <SargamHighway
           instrument={instrument}
           ewiSettings={ewiSettings}

@@ -23,9 +23,6 @@ interface SargamHighwayProps {
   onSelectNote: (noteIndex: number) => void;
 }
 
-const PIXELS_PER_BEAT = 136;
-const NOTE_LANE_HEIGHT = 118;
-
 export const SargamHighway: React.FC<SargamHighwayProps> = ({
   instrument,
   ewiSettings = DEFAULT_EWI_SETTINGS,
@@ -44,6 +41,7 @@ export const SargamHighway: React.FC<SargamHighwayProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [viewportWidth, setViewportWidth] = useState(1100);
+  const [viewportHeight, setViewportHeight] = useState(196);
   const [showDevanagari, setShowDevanagari] = useState(true);
 
   useEffect(() => {
@@ -52,16 +50,28 @@ export const SargamHighway: React.FC<SargamHighwayProps> = ({
     const ro = new ResizeObserver((entries) => {
       for (const entry of entries) {
         setViewportWidth(entry.contentRect.width);
+        if (entry.contentRect.height > 60) {
+          setViewportHeight(entry.contentRect.height);
+        }
       }
     });
     ro.observe(el);
     setViewportWidth(el.clientWidth || 1100);
+    if (el.clientHeight > 60) setViewportHeight(el.clientHeight);
     return () => ro.disconnect();
   }, []);
 
-  const playheadX = Math.max(130, Math.min(260, viewportWidth * 0.22));
-  const trackWidth = Math.max(viewportWidth, (song.totalBeats + 6) * PIXELS_PER_BEAT);
-  const translateX = playheadX - currentBeat * PIXELS_PER_BEAT;
+  // Responsive dynamic scale: mobile sees ~3 full beats ahead; tall desktops expand the melody lane!
+  const pixelsPerBeat = viewportWidth < 480 ? 92 : viewportWidth < 860 ? 112 : 136;
+  const noteLaneHeight = Math.max(96, Math.min(164, Math.round(viewportHeight - 62)));
+  const playheadX =
+    viewportWidth < 480
+      ? 72
+      : viewportWidth < 768
+      ? 102
+      : Math.max(126, Math.min(260, viewportWidth * 0.22));
+  const trackWidth = Math.max(viewportWidth, (song.totalBeats + 6) * pixelsPerBeat);
+  const translateX = playheadX - currentBeat * pixelsPerBeat;
 
   // Compute vertical pitch bounds for this song so melody contour uses the lane nicely
   const { minPitch, maxPitch } = useMemo(() => {
@@ -79,9 +89,9 @@ export const SargamHighway: React.FC<SargamHighwayProps> = ({
     const p = getPitchIndex(note.swara, note.octave);
     const range = Math.max(8, maxPitch - minPitch);
     const normalized = (p - minPitch) / range; // 0 = lowest, 1 = highest
-    const topPad = 24;
-    const bottomPad = 24;
-    return topPad + (1 - normalized) * (NOTE_LANE_HEIGHT - topPad - bottomPad);
+    const topPad = 22;
+    const bottomPad = 22;
+    return topPad + (1 - normalized) * (noteLaneHeight - topPad - bottomPad);
   };
 
   // Current Tala beat counter (1..beatsPerBar)
@@ -114,17 +124,18 @@ export const SargamHighway: React.FC<SargamHighwayProps> = ({
       {/* ====================================================================
           TOP MINI HEADER & SONG SCRUBBER WITH A-B LOOP OVERLAY
           ==================================================================== */}
-      <div className="flex items-center justify-between gap-3 px-4 py-1.5 bg-[#191715] border-b border-white/6 shrink-0">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <span className="text-[11px] uppercase tracking-wider font-semibold text-[#d4a373]">
-            Sargam Highway
+      <div className="flex items-center justify-between gap-2 sm:gap-3 px-2.5 sm:px-4 py-1.5 bg-[#191715] border-b border-white/6 shrink-0">
+        <div className="flex items-center gap-2 min-w-0 shrink-0">
+          <span className="text-[10px] sm:text-[11px] uppercase tracking-wider font-semibold text-[#d4a373]">
+            <span className="sm:hidden">Highway</span>
+            <span className="hidden sm:inline">Sargam Highway</span>
           </span>
           {activeSection && (
-            <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full bg-[#2a9d8f]/15 border border-[#2a9d8f]/35 text-[10px] font-medium text-[#72efdd] truncate">
+            <span className="hidden md:inline-flex items-center px-2 py-0.5 rounded-full bg-[#2a9d8f]/15 border border-[#2a9d8f]/35 text-[10px] font-medium text-[#72efdd] truncate">
               {activeSection.name}
             </span>
           )}
-          <span className="hidden md:inline-flex items-center gap-1.5 text-[11px] text-[#a69f95] font-mono-tech">
+          <span className="hidden lg:inline-flex items-center gap-1.5 text-[11px] text-[#a69f95] font-mono-tech">
             <span>{song.talaLabel}</span>
             <span className="text-[#d4a373]/30">·</span>
             <span className={beatInBar === 1 ? 'text-[#e9c46a] font-semibold' : ''}>
@@ -135,7 +146,7 @@ export const SargamHighway: React.FC<SargamHighwayProps> = ({
         </div>
 
         {/* Interactive Song Timeline Scrubber */}
-        <div className="flex-1 max-w-md mx-2 flex items-center gap-2">
+        <div className="flex-1 max-w-md mx-1 sm:mx-2 flex items-center gap-1.5 sm:gap-2 min-w-[80px]">
           <div
             onClick={handleScrubClick}
             className="relative flex-1 h-2.5 rounded-full bg-[#25221e] border border-white/8 cursor-pointer overflow-hidden group"
@@ -162,7 +173,7 @@ export const SargamHighway: React.FC<SargamHighwayProps> = ({
               style={{ width: `${progressPct}%` }}
             />
           </div>
-          <span className="text-[10px] font-mono-tech text-[#a69f95] w-14 text-right shrink-0">
+          <span className="hidden sm:inline text-[10px] font-mono-tech text-[#a69f95] w-14 text-right shrink-0">
             {Math.min(song.totalBeats, Math.max(0, currentBeat)).toFixed(1)}/{song.totalBeats}b
           </span>
         </div>
@@ -218,7 +229,7 @@ export const SargamHighway: React.FC<SargamHighwayProps> = ({
         {/* Subtle Register Horizontal Guide Lines (Taar / Madhya / Mandra) */}
         <div
           className="pointer-events-none absolute inset-x-0 top-0"
-          style={{ height: `${NOTE_LANE_HEIGHT}px` }}
+          style={{ height: `${noteLaneHeight}px` }}
         >
           <div className="absolute top-[22%] inset-x-0 border-t border-dashed border-white/[0.05]" />
           <div className="absolute top-[52%] inset-x-0 border-t border-white/[0.06]" />
@@ -227,24 +238,26 @@ export const SargamHighway: React.FC<SargamHighwayProps> = ({
 
         {/* Left-edge gradient mask + clean Register Rail so notes glide smoothly behind labels */}
         <div
-          className="pointer-events-none absolute left-0 top-0 bottom-0 w-24 z-20"
+          className="pointer-events-none absolute left-0 top-0 bottom-0 w-14 sm:w-24 z-20"
           style={{
             background:
-              'linear-gradient(90deg, #151412 0%, rgba(21,20,18,0.92) 52%, rgba(21,20,18,0) 100%)',
+              'linear-gradient(90deg, #151412 0%, rgba(21,20,18,0.92) 56%, rgba(21,20,18,0) 100%)',
           }}
         >
-          <div className="relative w-full" style={{ height: `${NOTE_LANE_HEIGHT}px` }}>
-            <span className="absolute left-2.5 top-2 text-[9px] font-mono-tech uppercase tracking-wider text-[#d4a373]/75">
+          <div className="relative w-full" style={{ height: `${noteLaneHeight}px` }}>
+            <span className="absolute left-1.5 sm:left-2.5 top-2 text-[8px] sm:text-[9px] font-mono-tech uppercase tracking-wider text-[#d4a373]/75">
               Taar
             </span>
-            <span className="absolute left-2.5 top-[50%] -translate-y-1/2 text-[9px] font-mono-tech uppercase tracking-wider text-[#a69f95]/75">
-              Madhya
+            <span className="absolute left-1.5 sm:left-2.5 top-[50%] -translate-y-1/2 text-[8px] sm:text-[9px] font-mono-tech uppercase tracking-wider text-[#a69f95]/75">
+              <span className="sm:hidden">Mid</span>
+              <span className="hidden sm:inline">Madhya</span>
             </span>
-            <span className="absolute left-2.5 bottom-2 text-[9px] font-mono-tech uppercase tracking-wider text-[#8ecae6]/70">
-              Mandra
+            <span className="absolute left-1.5 sm:left-2.5 bottom-2 text-[8px] sm:text-[9px] font-mono-tech uppercase tracking-wider text-[#8ecae6]/70">
+              <span className="sm:hidden">Low</span>
+              <span className="hidden sm:inline">Mandra</span>
             </span>
           </div>
-          <div className="px-2.5 pt-2 text-[9px] font-mono-tech uppercase tracking-wider text-[#a69f95]/55">
+          <div className="px-1.5 sm:px-2.5 pt-2 text-[8px] sm:text-[9px] font-mono-tech uppercase tracking-wider text-[#a69f95]/55">
             Lyrics
           </div>
         </div>
@@ -252,7 +265,7 @@ export const SargamHighway: React.FC<SargamHighwayProps> = ({
         {/* Lyric & Breath Lane Divider */}
         <div
           className="pointer-events-none absolute inset-x-0 border-t border-[#d4a373]/15 bg-[#181614]/70"
-          style={{ top: `${NOTE_LANE_HEIGHT}px`, bottom: 0 }}
+          style={{ top: `${noteLaneHeight}px`, bottom: 0 }}
         />
 
         {/* Fixed Glowing Jade Playhead Hit-Line */}
@@ -292,12 +305,12 @@ export const SargamHighway: React.FC<SargamHighwayProps> = ({
                 className={`pointer-events-none absolute top-0 bottom-0 ${
                   isSam ? 'border-l border-[#d4a373]/22' : 'border-l border-white/[0.04]'
                 }`}
-                style={{ left: `${b * PIXELS_PER_BEAT}px` }}
+                style={{ left: `${b * pixelsPerBeat}px` }}
               >
                 {isSam && b > 0 && (
                   <span
                     className="absolute left-1.5 text-[9px] font-mono-tech text-[#d4a373]/40 whitespace-nowrap"
-                    style={{ top: `${NOTE_LANE_HEIGHT - 14}px` }}
+                    style={{ top: `${noteLaneHeight - 14}px` }}
                   >
                     Bar {b / song.beatsPerBar + 1}
                   </span>
@@ -315,8 +328,8 @@ export const SargamHighway: React.FC<SargamHighwayProps> = ({
                   : 'bg-[#d4a373]/[0.03] border-x border-dashed border-[#d4a373]/35'
               }`}
               style={{
-                left: `${loopStart * PIXELS_PER_BEAT}px`,
-                width: `${(loopEnd - loopStart) * PIXELS_PER_BEAT}px`,
+                left: `${loopStart * pixelsPerBeat}px`,
+                width: `${(loopEnd - loopStart) * pixelsPerBeat}px`,
               }}
             >
               <span className="absolute top-1 left-1.5 px-1.5 py-[1px] rounded bg-[#e9c46a] text-[#121212] text-[9px] font-bold">
@@ -334,7 +347,7 @@ export const SargamHighway: React.FC<SargamHighwayProps> = ({
           <svg
             className="pointer-events-none absolute top-0 left-0 overflow-visible z-30"
             width={trackWidth}
-            height={NOTE_LANE_HEIGHT}
+            height={noteLaneHeight}
           >
             <defs>
               <linearGradient id="meendGrad" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -350,8 +363,8 @@ export const SargamHighway: React.FC<SargamHighwayProps> = ({
 
             {song.notes.map((note, idx) => {
               if (!note.ornament) return null;
-              const xStart = note.startBeat * PIXELS_PER_BEAT;
-              const width = Math.max(54, note.durationBeats * PIXELS_PER_BEAT - 8);
+              const xStart = note.startBeat * pixelsPerBeat;
+              const width = Math.max(54, note.durationBeats * pixelsPerBeat - 8);
               const yCurr = getNoteY(note);
 
               // MEEND: Smooth Bezier glide curve connecting source pitch to destination note
@@ -360,7 +373,7 @@ export const SargamHighway: React.FC<SargamHighwayProps> = ({
                 const xFrom = prev
                   ? Math.min(
                       xStart - 6,
-                      (prev.startBeat + prev.durationBeats) * PIXELS_PER_BEAT - 12
+                      (prev.startBeat + prev.durationBeats) * pixelsPerBeat - 12
                     )
                   : xStart - 44;
                 const yFrom = prev ? getNoteY(prev) : yCurr + 18;
@@ -503,8 +516,8 @@ export const SargamHighway: React.FC<SargamHighwayProps> = ({
               SARGAM NOTE PILLS + ALIGNED LYRICS + BREATH (🌬️) MARKERS
               ================================================================ */}
           {song.notes.map((note, idx) => {
-            const x = note.startBeat * PIXELS_PER_BEAT;
-            const width = Math.max(54, note.durationBeats * PIXELS_PER_BEAT - 8);
+            const x = note.startBeat * pixelsPerBeat;
+            const width = Math.max(54, note.durationBeats * pixelsPerBeat - 8);
             const yCenter = getNoteY(note);
             const isActive = idx === activeNoteIndex;
             const isPast = idx < activeNoteIndex;
@@ -536,7 +549,7 @@ export const SargamHighway: React.FC<SargamHighwayProps> = ({
             const breathBeatPos = note.startBeat + note.durationBeats;
             const nextNote = idx < song.notes.length - 1 ? song.notes[idx + 1] : null;
             const gapBeats = nextNote ? Math.max(0.5, nextNote.startBeat - breathBeatPos) : 1.0;
-            const breathCenterX = (breathBeatPos + gapBeats * 0.5) * PIXELS_PER_BEAT;
+            const breathCenterX = (breathBeatPos + gapBeats * 0.5) * pixelsPerBeat;
             const showBreathLabel = gapBeats >= 0.72;
             const isBreathNear =
               Math.abs(currentBeat - (breathBeatPos + gapBeats * 0.4)) < 0.85 &&
@@ -660,7 +673,7 @@ export const SargamHighway: React.FC<SargamHighwayProps> = ({
                 <div
                   style={{
                     left: `${x}px`,
-                    top: `${NOTE_LANE_HEIGHT + 7}px`,
+                    top: `${noteLaneHeight + 7}px`,
                     minWidth: `${width}px`,
                   }}
                   className="absolute flex flex-col items-start px-1 pointer-events-none"
@@ -696,7 +709,7 @@ export const SargamHighway: React.FC<SargamHighwayProps> = ({
                   <div
                     style={{
                       left: `${breathCenterX}px`,
-                      top: `${NOTE_LANE_HEIGHT + 9}px`,
+                      top: `${noteLaneHeight + 9}px`,
                     }}
                     className={`absolute -translate-x-1/2 flex items-center gap-1 px-1.5 py-0.5 rounded-full border text-[10px] whitespace-nowrap transition-all ${
                       isBreathNear
