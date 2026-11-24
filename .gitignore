@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+dist-ssr/
+*.local
+
+# Environment & secrets
+.env
+.env.*
+!.env.example
+
+# Vercel local link metadata
+.vercel/
+
+# Raw third-party scrape cache (compiled output lives in public/data/library.json)
+data/notesandsargam-dump.json
+
+# Python caches
+__pycache__/
+*.py[cod]
+
+# Logs & OS artifacts
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db

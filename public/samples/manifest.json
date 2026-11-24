@@ -1,0 +1,148 @@
+{
+  "credits": {
+    "bansuri": "Real Indian Assam Bamboo Bansuri recordings (\"Flute Sargams\", CC0 1.0 Public Domain) by roguentropy — single cohesive bamboo instrument",
+    "saxophone": "Real Studio Vibrato Saxophone (VCSL BrettTenor Vibrato by Versilian Studios, CC0 1.0 Public Domain)",
+    "harmonica": "Real Studio Hohner Super 64 Chromatic Harmonica (VCSL by Versilian Studios, CC0 1.0 Public Domain)"
+  },
+  "bansuri": [
+    {
+      "file": "E4.mp3",
+      "midi": 64,
+      "hz": 337.137
+    },
+    {
+      "file": "E5.mp3",
+      "midi": 76,
+      "hz": 667.686
+    },
+    {
+      "file": "B5.mp3",
+      "midi": 83,
+      "hz": 1027.336
+    }
+  ],
+  "saxophone": [
+    {
+      "file": "As2.mp3",
+      "midi": 46,
+      "hz": 116.541
+    },
+    {
+      "file": "C3.mp3",
+      "midi": 48,
+      "hz": 130.813
+    },
+    {
+      "file": "D3.mp3",
+      "midi": 50,
+      "hz": 146.832
+    },
+    {
+      "file": "E3.mp3",
+      "midi": 52,
+      "hz": 164.814
+    },
+    {
+      "file": "Fs3.mp3",
+      "midi": 54,
+      "hz": 184.997
+    },
+    {
+      "file": "As3.mp3",
+      "midi": 58,
+      "hz": 233.082
+    },
+    {
+      "file": "C4.mp3",
+      "midi": 60,
+      "hz": 261.626
+    },
+    {
+      "file": "D4.mp3",
+      "midi": 62,
+      "hz": 293.665
+    },
+    {
+      "file": "E4.mp3",
+      "midi": 64,
+      "hz": 329.628
+    },
+    {
+      "file": "Fs4.mp3",
+      "midi": 66,
+      "hz": 369.994
+    },
+    {
+      "file": "As4.mp3",
+      "midi": 70,
+      "hz": 466.164
+    },
+    {
+      "file": "C5.mp3",
+      "midi": 72,
+      "hz": 523.251
+    },
+    {
+      "file": "E5.mp3",
+      "midi": 76,
+      "hz": 659.255
+    },
+    {
+      "file": "G5.mp3",
+      "midi": 79,
+      "hz": 783.991
+    }
+  ],
+  "harmonica": [
+    {
+      "file": "C3.mp3",
+      "midi": 48,
+      "hz": 130.813
+    },
+    {
+      "file": "E3.mp3",
+      "midi": 52,
+      "hz": 164.814
+    },
+    {
+      "file": "G3.mp3",
+      "midi": 55,
+      "hz": 195.998
+    },
+    {
+      "file": "C4.mp3",
+      "midi": 60,
+      "hz": 261.626
+    },
+    {
+      "file": "E4.mp3",
+      "midi": 64,
+      "hz": 329.628
+    },
+    {
+      "file": "G4.mp3",
+      "midi": 67,
+      "hz": 391.995
+    },
+    {
+      "file": "C5.mp3",
+      "midi": 72,
+      "hz": 523.251
+    },
+    {
+      "file": "E5.mp3",
+      "midi": 76,
+      "hz": 659.255
+    },
+    {
+      "file": "G5.mp3",
+      "midi": 79,
+      "hz": 783.991
+    },
+    {
+      "file": "C6.mp3",
+      "midi": 84,
+      "hz": 1046.502
+    }
+  ]
+}
