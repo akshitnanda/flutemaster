@@ -86,7 +86,7 @@ export const SwaraSymbol: React.FC<SwaraSymbolProps> = ({
       </span>
 
       {/* Primary Swara glyph */}
-      <span className={`${s.text} font-semibold tracking-tight leading-none`}>{label}</span>
+      <span className={`${s.text} font-display font-semibold tracking-tight leading-none`}>{label}</span>
 
       {/* Bottom mark slot: Komal underline & Mandra Saptak lower dot */}
       <span className="flex flex-col items-center justify-center gap-[2px] min-h-[6px]">

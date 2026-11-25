@@ -83,24 +83,24 @@ export const SongLibraryDrawer: React.FC<SongLibraryDrawerProps> = ({
     <div className="fixed inset-0 z-50 flex">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/65 backdrop-blur-sm transition-opacity"
+        className="fixed inset-0 bg-black/70 transition-opacity"
         onClick={onClose}
       />
 
       {/* Drawer Panel */}
-      <aside className="relative z-10 w-full sm:max-w-lg h-[100dvh] bg-[#161513] border-r border-[#d4a373]/25 shadow-2xl flex flex-col">
+      <aside className="relative z-10 w-full sm:max-w-lg h-[100dvh] bg-[#11100f] border-r border-[#2b2723] shadow-2xl flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/8">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-[#262320]">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-[#d4a373]/15 border border-[#d4a373]/40 flex items-center justify-center text-[#d4a373]">
+            <div className="w-8 h-8 rounded-[3px] bg-[#181613] border border-[#c9a25e]/45 flex items-center justify-center text-[#c9a25e]">
               <Music className="w-4 h-4" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-base font-semibold text-[#f8f9fa]">
+                <h2 className="font-display text-base font-semibold text-[#f2ede4]">
                   Bollywood &amp; Sargam Library
                 </h2>
-                <span className="px-1.5 py-0.5 rounded-full bg-[#2a9d8f]/20 border border-[#2a9d8f]/45 text-[10px] font-mono-tech font-semibold text-[#72efdd]">
+                <span className="px-1.5 py-0.5 rounded-[2px] bg-[#12221e] border border-[#3ca38f]/45 text-[10px] font-mono-tech font-semibold text-[#5eead4]">
                   {songs.length} songs
                 </span>
               </div>

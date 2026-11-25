@@ -17,13 +17,13 @@ export const NotationGuideModal: React.FC<NotationGuideModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="fixed inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
+      <div className="fixed inset-0 bg-black/75" onClick={onClose} />
 
-      <div className="relative z-10 w-full max-w-2xl max-h-[90dvh] overflow-y-auto rounded-2xl bg-[#181614] border border-[#d4a373]/30 shadow-2xl p-4 sm:p-6 space-y-5">
-        <div className="flex items-center justify-between border-b border-white/10 pb-3.5">
+      <div className="relative z-10 w-full max-w-2xl max-h-[90dvh] overflow-y-auto rounded-[4px] bg-[#11100f] border border-[#2b2723] shadow-2xl p-4 sm:p-6 space-y-5">
+        <div className="flex items-center justify-between border-b border-[#262320] pb-3.5">
           <div className="flex items-center gap-2.5">
-            <BookOpen className="w-5 h-5 text-[#d4a373]" />
-            <h2 className="text-lg font-semibold text-[#f8f9fa]">
+            <BookOpen className="w-5 h-5 text-[#c9a25e]" />
+            <h2 className="font-display text-lg font-semibold text-[#f2ede4]">
               Bansuri Sargam &amp; Studio Guide
             </h2>
           </div>

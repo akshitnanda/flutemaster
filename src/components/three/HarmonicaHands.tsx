@@ -1,8 +1,9 @@
-import React, { useMemo, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { HarmonicaTab, OrnamentType } from '../../types/music';
 import { HARMONICA_DEPTH, HARMONICA_WIDTH } from './HarmonicaModel';
+import { createStudioHandMaterial } from './handMaterial';
 
 interface HarmonicaHandsProps {
   tab: HarmonicaTab;
@@ -23,24 +24,23 @@ export const HarmonicaHands: React.FC<HarmonicaHandsProps> = ({
   tab,
   activeOrnament,
   isPlaying,
-  handOpacity = 0.34,
+  handOpacity = 0.24,
 }) => {
   const handMaterial = useMemo(
     () =>
-      new THREE.MeshPhysicalMaterial({
-        color: new THREE.Color('#f5e6d3'),
-        emissive: new THREE.Color('#7a5938'),
-        emissiveIntensity: 0.22,
-        roughness: 0.25,
-        metalness: 0.06,
-        transparent: true,
+      createStudioHandMaterial({
+        baseColor: '#e8edf2',
+        emissiveColor: '#364352',
+        rimColor: '#e0f2fe',
         opacity: handOpacity,
-        clearcoat: 0.65,
-        clearcoatRoughness: 0.18,
-        depthWrite: false,
+        fresnelPower: 2.3,
+        fresnelStrength: 0.7,
+        rimAlphaBoost: 0.5,
       }),
     [handOpacity]
   );
+
+  useEffect(() => () => handMaterial.dispose(), [handMaterial]);
 
   const slideFingerRef = useRef<THREE.Group>(null);
   const rightCupRef = useRef<THREE.Group>(null);

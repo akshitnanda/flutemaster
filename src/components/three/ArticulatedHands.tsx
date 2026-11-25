@@ -1,8 +1,9 @@
-import React, { useMemo, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { HolePattern, OrnamentType } from '../../types/music';
 import { FINGER_HOLES, FLUTE_RADIUS } from './fluteGeometry';
+import { createStudioHandMaterial } from './handMaterial';
 
 interface ArticulatedHandsProps {
   holes: HolePattern;
@@ -185,24 +186,23 @@ export const ArticulatedHands: React.FC<ArticulatedHandsProps> = ({
   holes,
   activeOrnament,
   isPlaying,
-  handOpacity = 0.34,
+  handOpacity = 0.25,
 }) => {
   const handMaterial = useMemo(
     () =>
-      new THREE.MeshPhysicalMaterial({
-        color: new THREE.Color('#f5e6d3'),
-        emissive: new THREE.Color('#7a5938'),
-        emissiveIntensity: 0.22,
-        roughness: 0.25,
-        metalness: 0.06,
-        transparent: true,
+      createStudioHandMaterial({
+        baseColor: '#efe2d1',
+        emissiveColor: '#56412b',
+        rimColor: '#fae4c3',
         opacity: handOpacity,
-        clearcoat: 0.65,
-        clearcoatRoughness: 0.18,
-        depthWrite: false,
+        fresnelPower: 2.35,
+        fresnelStrength: 0.62,
+        rimAlphaBoost: 0.46,
       }),
     [handOpacity]
   );
+
+  useEffect(() => () => handMaterial.dispose(), [handMaterial]);
 
   let lowestActiveIdx = 0;
   for (let i = 5; i >= 0; i--) {

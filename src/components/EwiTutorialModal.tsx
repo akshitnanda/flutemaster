@@ -73,23 +73,23 @@ export const EwiTutorialModal: React.FC<EwiTutorialModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5">
-      <div className="fixed inset-0 bg-black/75 backdrop-blur-sm" onClick={onClose} />
+      <div className="fixed inset-0 bg-black/75" onClick={onClose} />
 
-      <div className="relative z-10 w-full max-w-4xl max-h-[92dvh] flex flex-col rounded-2xl bg-[#181614] border border-[#72efdd]/30 shadow-2xl overflow-hidden">
+      <div className="relative z-10 w-full max-w-4xl max-h-[92dvh] flex flex-col rounded-[4px] bg-[#11100f] border border-[#2b2723] shadow-2xl overflow-hidden">
         {/* Modal Header */}
-        <div className="flex items-center justify-between px-4 sm:px-5 py-3.5 sm:py-4 border-b border-white/10 bg-[#141311]">
+        <div className="flex items-center justify-between px-4 sm:px-5 py-3.5 sm:py-4 border-b border-[#262320] bg-[#141311]">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#2a9d8f]/30 to-[#72efdd]/15 border border-[#72efdd]/40 flex items-center justify-center text-[#72efdd]">
+            <div className="w-9 h-9 rounded-[3px] bg-[#181613] border border-[#c9a25e]/45 flex items-center justify-center text-[#c9a25e]">
               <Sparkles className="w-4.5 h-4.5" />
             </div>
             <div>
-              <h2 className="text-base sm:text-lg font-semibold text-[#f8f9fa] flex items-center gap-2">
+              <h2 className="font-display text-base sm:text-lg font-semibold text-[#f2ede4] flex items-center gap-2">
                 Eastar EDA-100 Digital Aerophone · Complete Guide
-                <span className="hidden sm:inline-block text-[10px] font-mono-tech px-2 py-0.5 rounded-full bg-[#2a9d8f]/20 border border-[#72efdd]/35 text-[#72efdd]">
+                <span className="hidden sm:inline-block text-[10px] font-mono-tech px-2 py-0.5 rounded-[2px] bg-[#12221e] border border-[#3ca38f]/45 text-[#5eead4]">
                   27 Tones · Dual Fingering · USB/BT MIDI
                 </span>
               </h2>
-              <p className="text-xs text-[#a69f95]">
+              <p className="text-xs text-[#8a8278]">
                 Hardware setup, Bollywood Transpose &amp; Reverb tuning, capacitive play style &amp;
                 12-Swara key charts.
               </p>
@@ -98,7 +98,7 @@ export const EwiTutorialModal: React.FC<EwiTutorialModalProps> = ({
 
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-[#a69f95] hover:text-[#f8f9fa] hover:bg-white/10 cursor-pointer"
+            className="p-1.5 rounded-[2px] text-[#8a8278] hover:text-[#f2ede4] hover:bg-[#1a1815] cursor-pointer"
             title="Close Guide"
           >
             <X className="w-5 h-5" />
@@ -106,17 +106,17 @@ export const EwiTutorialModal: React.FC<EwiTutorialModalProps> = ({
         </div>
 
         {/* Navigation Tabs */}
-        <div className="flex items-center gap-1.5 px-4 sm:px-5 py-2.5 border-b border-white/8 bg-[#1a1816] overflow-x-auto no-scrollbar">
+        <div className="flex items-center gap-1 px-4 sm:px-5 border-b border-[#262320] bg-[#121110] overflow-x-auto no-scrollbar">
           {tabs.map((t) => {
             const active = activeTab === t.id;
             return (
               <button
                 key={t.id}
                 onClick={() => setActiveTab(t.id)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all cursor-pointer border outline-none focus-visible:ring-1 focus-visible:ring-[#72efdd]/60 ${
+                className={`flex items-center gap-1.5 px-3 py-2.5 text-xs font-mono-tech whitespace-nowrap transition-colors cursor-pointer border-b-2 outline-none focus-visible:ring-1 focus-visible:ring-[#c9a25e]/60 ${
                   active
-                    ? 'bg-[#2a9d8f]/25 border-[#72efdd]/50 text-[#72efdd] shadow-sm'
-                    : 'bg-transparent border-transparent text-[#a69f95] hover:text-[#f8f9fa] hover:bg-white/5'
+                    ? 'border-[#e05a33] text-[#f2ede4] font-semibold'
+                    : 'border-transparent text-[#8a8278] hover:text-[#f2ede4]'
                 }`}
               >
                 {t.icon}
@@ -737,19 +737,19 @@ export const EwiTutorialModal: React.FC<EwiTutorialModalProps> = ({
         </div>
 
         {/* Footer Tip */}
-        <div className="px-5 py-3 border-t border-white/10 bg-[#141311] flex flex-wrap items-center justify-between gap-2 text-[11px] text-[#a69f95]">
+        <div className="px-5 py-3 border-t border-[#262320] bg-[#141311] flex flex-wrap items-center justify-between gap-2 text-[11px] text-[#8a8278]">
           <div className="flex items-center gap-2">
-            <Volume2 className="w-3.5 h-3.5 text-[#2a9d8f]" />
+            <Volume2 className="w-3.5 h-3.5 text-[#3ca38f]" />
             <span>
-              Pro Tip: Mute the app&apos;s <strong className="text-[#f8f9fa]">Lead</strong> track in
-              the Studio Mixer while leaving <strong className="text-[#d4a373]">Tanpura</strong> +{' '}
-              <strong className="text-[#f4a261]">Tabla</strong> on so YOUR physical Eastar EDA-100
+              Pro Tip: Mute the app&apos;s <strong className="text-[#f2ede4]">Lead</strong> track in
+              the Studio Mixer while leaving <strong className="text-[#c9a25e]">Tanpura</strong> +{' '}
+              <strong className="text-[#e05a33]">Tabla</strong> on so YOUR physical Eastar EDA-100
               is the star!
             </span>
           </div>
           <button
             onClick={onClose}
-            className="px-4 py-1.5 rounded-lg bg-[#2a9d8f] hover:bg-[#31b2a3] text-[#f8f9fa] font-semibold cursor-pointer"
+            className="px-4 py-1.5 rounded-[2px] bg-[#f2ede4] hover:bg-[#e5dfd4] text-[#0c0c0b] font-semibold cursor-pointer"
           >
             Back to Studio
           </button>

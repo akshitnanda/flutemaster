@@ -1,4 +1,4 @@
-import React, { useMemo, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { EwiFingering, OrnamentType } from '../../types/music';
@@ -11,6 +11,7 @@ import {
   EWI_RP_EB_POS,
   EWI_SIDE_BB_POS,
 } from './EwiModel';
+import { createStudioHandMaterial } from './handMaterial';
 
 interface EwiHandsProps {
   fingering: EwiFingering;
@@ -114,24 +115,23 @@ export const EwiHands: React.FC<EwiHandsProps> = ({
   fingering,
   activeOrnament,
   isPlaying,
-  handOpacity = 0.33,
+  handOpacity = 0.23,
 }) => {
   const handMaterial = useMemo(
     () =>
-      new THREE.MeshPhysicalMaterial({
-        color: new THREE.Color('#eef4f8'),
-        emissive: new THREE.Color('#3b5a68'),
-        emissiveIntensity: 0.22,
-        roughness: 0.24,
-        metalness: 0.08,
-        transparent: true,
+      createStudioHandMaterial({
+        baseColor: '#e6eff2',
+        emissiveColor: '#294049',
+        rimColor: '#c2f7ed',
         opacity: handOpacity,
-        clearcoat: 0.72,
-        clearcoatRoughness: 0.16,
-        depthWrite: false,
+        fresnelPower: 2.35,
+        fresnelStrength: 0.72,
+        rimAlphaBoost: 0.5,
       }),
     [handOpacity]
   );
+
+  useEffect(() => () => handMaterial.dispose(), [handMaterial]);
 
   const octThumbRef = useRef<THREE.Group>(null);
   const pbThumbRef = useRef<THREE.Group>(null);

@@ -1,4 +1,4 @@
-import React, { useMemo, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { OrnamentType, SaxFingering } from '../../types/music';
@@ -9,6 +9,7 @@ import {
   SAX_OCTAVE_KEY_POS,
   SAX_SIDE_BB_POS,
 } from './SaxophoneModel';
+import { createStudioHandMaterial } from './handMaterial';
 
 interface SaxophoneHandsProps {
   fingering: SaxFingering;
@@ -115,24 +116,23 @@ export const SaxophoneHands: React.FC<SaxophoneHandsProps> = ({
   fingering,
   activeOrnament,
   isPlaying,
-  handOpacity = 0.34,
+  handOpacity = 0.24,
 }) => {
   const handMaterial = useMemo(
     () =>
-      new THREE.MeshPhysicalMaterial({
-        color: new THREE.Color('#f5e6d3'),
-        emissive: new THREE.Color('#7a5938'),
-        emissiveIntensity: 0.22,
-        roughness: 0.25,
-        metalness: 0.06,
-        transparent: true,
+      createStudioHandMaterial({
+        baseColor: '#efe6da',
+        emissiveColor: '#4a3a2a',
+        rimColor: '#fff5e4',
         opacity: handOpacity,
-        clearcoat: 0.65,
-        clearcoatRoughness: 0.18,
-        depthWrite: false,
+        fresnelPower: 2.25,
+        fresnelStrength: 0.72,
+        rimAlphaBoost: 0.52,
       }),
     [handOpacity]
   );
+
+  useEffect(() => () => handMaterial.dispose(), [handMaterial]);
 
   const octThumbRef = useRef<THREE.Group>(null);
   const gSharpPinkyRef = useRef<THREE.Group>(null);
