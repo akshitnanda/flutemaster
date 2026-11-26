@@ -3,6 +3,7 @@ import path from 'node:path';
 
 const DUMP_PATH = path.resolve('data/notesandsargam-dump.json');
 const MIR_CACHE_PATH = path.resolve('data/mir-bpm-cache.json');
+const OVERRIDES_PATH = path.resolve('data/song-overrides.json');
 const OUT_DIR = path.resolve('public/data');
 const OUT_PATH = path.join(OUT_DIR, 'library.json');
 
@@ -10,6 +11,9 @@ const dump = JSON.parse(fs.readFileSync(DUMP_PATH, 'utf8'));
 const mirCache = fs.existsSync(MIR_CACHE_PATH)
   ? JSON.parse(fs.readFileSync(MIR_CACHE_PATH, 'utf8'))
   : {};
+const songOverrides = fs.existsSync(OVERRIDES_PATH)
+  ? JSON.parse(fs.readFileSync(OVERRIDES_PATH, 'utf8'))
+  : { postOverrides: {}, additionalSongs: [] };
 
 const PITCH_TO_SCALE_ID = {
   D: 'D_BASS',
@@ -49,58 +53,83 @@ function toSemi(swara, octave) {
   return (SWARA_SEMI[swara] ?? 0) + (octave === 'mandra' ? -12 : octave === 'taar' ? 12 : 0);
 }
 
-function semiToSwaraOct(semi) {
-  let oct = 'madhya';
-  let local = semi;
-  if (semi < 0) {
-    oct = 'mandra';
-    local = semi + 12;
-  } else if (semi >= 12) {
-    oct = 'taar';
-    local = semi - 12;
-  }
-  const entry = Object.entries(SWARA_SEMI).find(([, v]) => v === local);
-  return entry ? { swara: entry[0], octave: oct } : null;
-}
-
 /**
- * Fixes missing octave markers in text Sargam within each vocal line by snapping unmarked notes
- * away from unnatural >=8-semitone jumps when an adjacent playable flute octave is within <=5 semitones.
- * Resets at every line boundary so cross-line jumps never poison entire verses.
+ * Fixes missing octave markers within each vocal line:
+ * 1) Prefix Mandra lookahead: if an unmarked line opening starts on MANDRA_OK (P/D/N)
+ *    followed within <=2 notes by unmarked lower Madhya (S..G) with >=7 semitone drop,
+ *    anchors the opening P/D/N in Mandra instead of letting S..G flip up to Taar.
+ * 2) Forward continuity: snaps unmarked notes away from >=8-semitone jumps to an adjacent octave within <=5 semitones.
  */
 function resolveOctaveContinuity(notes) {
-  for (let i = 1; i < notes.length; i++) {
-    const cur = notes[i];
-    const prev = notes[i - 1];
-    if (cur.lineIdx !== prev.lineIdx) continue;
-    if (cur.explicitOctave) continue;
+  let start = 0;
+  while (start < notes.length) {
+    const lineIdx = notes[start].lineIdx;
+    let end = start;
+    while (end < notes.length && notes[end].lineIdx === lineIdx) end++;
 
-    const prevSemi = toSemi(prev.swara, prev.octave);
-    const curSemi = toSemi(cur.swara, cur.octave);
-    const curDist = Math.abs(curSemi - prevSemi);
-    if (curDist < 8) continue;
-
-    let bestOct = cur.octave;
-    let bestDist = curDist;
-    const candidates = ['madhya'];
-    if (MANDRA_OK.has(cur.swara)) candidates.push('mandra');
-    if (TAAR_OK.has(cur.swara)) candidates.push('taar');
-
-    for (const oct of candidates) {
-      const d = Math.abs(toSemi(cur.swara, oct) - prevSemi);
-      if (d < bestDist && d <= 5) {
-        bestDist = d;
-        bestOct = oct;
+    // Prefix lookahead for lines starting on unmarked ,N/,D rising into Madhya S..R
+    // (Exclude P-D -> S transitions, which are overwhelmingly ascending P D S' in Taar.)
+    const first = notes[start];
+    if (
+      start + 1 < end &&
+      !first.explicitOctave &&
+      first.octave === 'madhya' &&
+      (first.swara === 'N' || first.swara === 'Nk' || first.swara === 'D' || first.swara === 'Dk')
+    ) {
+      const second = notes[start + 1];
+      if (!second.explicitOctave && second.octave === 'madhya') {
+        if (toSemi(second.swara, 'madhya') <= 2 && toSemi(first.swara, 'madhya') - toSemi(second.swara, 'madhya') >= 7) {
+          first.octave = 'mandra';
+        } else if (
+          start + 2 < end &&
+          (second.swara === 'N' || second.swara === 'Nk') &&
+          !notes[start + 2].explicitOctave &&
+          notes[start + 2].octave === 'madhya' &&
+          toSemi(notes[start + 2].swara, 'madhya') <= 2
+        ) {
+          first.octave = 'mandra';
+          second.octave = 'mandra';
+        }
       }
     }
-    cur.octave = bestOct;
+
+    // Forward continuity within the current line only
+    for (let i = start + 1; i < end; i++) {
+      const cur = notes[i];
+      const prev = notes[i - 1];
+      if (cur.explicitOctave) continue;
+
+      const prevSemi = toSemi(prev.swara, prev.octave);
+      const curSemi = toSemi(cur.swara, cur.octave);
+      const curDist = Math.abs(curSemi - prevSemi);
+      if (curDist < 8) continue;
+
+      let bestOct = cur.octave;
+      let bestDist = curDist;
+      const candidates = ['madhya'];
+      if (MANDRA_OK.has(cur.swara)) candidates.push('mandra');
+      if (TAAR_OK.has(cur.swara)) candidates.push('taar');
+
+      for (const oct of candidates) {
+        const d = Math.abs(toSemi(cur.swara, oct) - prevSemi);
+        if (d < bestDist && d <= 5) {
+          bestDist = d;
+          bestOct = oct;
+        }
+      }
+      cur.octave = bestOct;
+    }
+
+    start = end;
   }
 }
 
 /**
- * Handles notes outside 6-hole Bansuri playable range [-5..19] (Mandra P .. Taar P) AFTER continuity.
- * If shifting an entire line by +/-12 brings all its notes inside [-5, 19], shifts the line coherently
- * to preserve melodic contour; otherwise clamps only the offending notes.
+ * Handles notes outside 6-hole Bansuri playable range [-5..19] (Mandra P .. Taar P) AFTER continuity:
+ * 1) Whole-line +/-12 shift if every note lands inside [-5, 19].
+ * 2) Coherent high-cluster (-12) shift for any contiguous taar run containing D'/Dk'/N'/Nk'
+ *    so adjacent S'/P' notes move to Madhya together without -10/+10 ping-pong leaps.
+ * 3) Fallback per-note clamp for any remaining edge notes.
  */
 function enforcePlayableRange(notes) {
   let clampedCount = 0;
@@ -123,7 +152,7 @@ function enforcePlayableRange(notes) {
       });
       if (canShiftWholeLine) {
         for (const n of lineNotes) {
-          const nextOct =
+          n.octave =
             shift === 12
               ? n.octave === 'mandra'
                 ? 'madhya'
@@ -131,9 +160,29 @@ function enforcePlayableRange(notes) {
               : n.octave === 'taar'
               ? 'madhya'
               : 'mandra';
-          n.octave = nextOct;
         }
       } else {
+        // Coherent contiguous taar-cluster shift down to madhya when cluster contains D'/N' (>19)
+        let idx = 0;
+        while (idx < lineNotes.length) {
+          if (lineNotes[idx].octave === 'taar') {
+            let cEnd = idx;
+            let hasAboveTaarP = false;
+            while (cEnd < lineNotes.length && lineNotes[cEnd].octave === 'taar') {
+              if (toSemi(lineNotes[cEnd].swara, 'taar') > 19) hasAboveTaarP = true;
+              cEnd++;
+            }
+            if (hasAboveTaarP) {
+              for (let c = idx; c < cEnd; c++) {
+                lineNotes[c].octave = 'madhya';
+              }
+            }
+            idx = cEnd;
+          } else {
+            idx++;
+          }
+        }
+        // Fallback per-note clamp for any still-out-of-range low notes
         for (const n of lineNotes) {
           const s = toSemi(n.swara, n.octave);
           if (s < -5 || s > 19) {
@@ -150,7 +199,7 @@ function enforcePlayableRange(notes) {
 
 /**
  * Recomputes ornament grace octaves AFTER resolveOctaveContinuity() & enforcePlayableRange()
- * so Meend glides always start from the settled previous note and Kan grace notes sit in the closest octave.
+ * so Meend glides match the settled previous note and redundant self-kans are stripped.
  */
 function recomputeOrnaments(notes) {
   for (let i = 0; i < notes.length; i++) {
@@ -162,7 +211,10 @@ function recomputeOrnaments(notes) {
       cur.ornament = ['meend', prev.swara, prev.octave];
     } else if (type === 'kan') {
       const graceSwara = cur.ornament[1];
-      if (!graceSwara) continue;
+      if (!graceSwara) {
+        cur.ornament = undefined;
+        continue;
+      }
       const mainSemi = toSemi(cur.swara, cur.octave);
       const candidates = ['madhya'];
       if (MANDRA_OK.has(graceSwara)) candidates.push('mandra');
@@ -176,12 +228,62 @@ function recomputeOrnaments(notes) {
           bestOct = oct;
         }
       }
-      cur.ornament = ['kan', graceSwara, bestOct];
+      if (graceSwara === cur.swara && bestOct === cur.octave) {
+        cur.ornament = undefined;
+      } else {
+        cur.ornament = ['kan', graceSwara, bestOct];
+      }
     }
   }
 }
 
-// Slugs already covered by our hand-crafted Studio Featured songs (with Devanagari lyrics)
+/**
+ * Infers Hindustani Thaat from compiled pitch-class usage when a post lacks an explicit Raag header.
+ */
+function inferThaatFromNotes(rawNotes) {
+  const total = Math.max(1, rawNotes.length);
+  const counts = {};
+  for (const n of rawNotes) {
+    counts[n.swara] = (counts[n.swara] || 0) + 1;
+  }
+  const has = (sw) => (counts[sw] || 0) >= 3 || (counts[sw] || 0) / total >= 0.035;
+  const freq = (sw) => (counts[sw] || 0) / total;
+
+  const mixedPairs = [
+    ['Rk', 'R'],
+    ['Gk', 'G'],
+    ['M', 'Mt'],
+    ['Dk', 'D'],
+    ['Nk', 'N'],
+  ].filter(([a, b]) => freq(a) >= 0.05 && freq(b) >= 0.05);
+  if (mixedPairs.length >= 2) return 'Mishra Thaat';
+
+  const pick = (a, b) => (has(a) && (counts[a] || 0) >= (counts[b] || 0) * 0.55);
+  const isRk = pick('Rk', 'R');
+  const isGk = pick('Gk', 'G');
+  const isMt = pick('Mt', 'M');
+  const isDk = pick('Dk', 'D');
+  const isNk = pick('Nk', 'N');
+
+  if (isRk && isGk && !isMt && isDk && isNk) return 'Bhairavi Thaat';
+  if (isRk && isGk && isMt && isDk && !isNk) return 'Todi Thaat';
+  if (isRk && !isGk && !isMt && isDk && !isNk) return 'Bhairav Thaat';
+  if (isRk && !isGk && isMt && isDk && !isNk) return 'Poorvi Thaat';
+  if (isRk && !isGk && isMt && !isDk && !isNk) return 'Marwa Thaat';
+  if (!isRk && isGk && !isMt && isDk && isNk) return 'Asavari Thaat';
+  if (!isRk && isGk && !isMt && !isDk && isNk) return 'Kafi Thaat';
+  if (!isRk && !isGk && isMt && !isDk && !isNk) return 'Kalyan Thaat';
+  if (!isRk && !isGk && !isMt && !isDk && isNk) return 'Khamaj Thaat';
+  if (!isRk && !isGk && !isMt && !isDk && !isNk) return 'Bilawal Thaat';
+  if (isRk && !isGk && !isMt && !isDk && isNk) return 'Ahir Bhairav';
+  if (isMt && isNk && !isRk && !isGk) return 'Yaman / Khamaj';
+  if (isGk && isDk && !isNk) return 'Keeravani';
+  if (isGk && isMt) return 'Madhuvanti / Todi';
+  if (isDk && !isGk && !isRk) return 'Charukesi';
+  return 'Mishra Thaat';
+}
+
+// Slugs already covered by our hand-crafted Studio Featured songs
 const FEATURED_SLUGS = new Set([
   'tujhe-dekha-to-ye-jana-sanam',
   'lag-ja-gale',
@@ -193,7 +295,7 @@ const FEATURED_SLUGS = new Set([
 
 // Known corrupted clone or broken source posts in the WP dump
 const BROKEN_SOURCE_SLUGS = new Set([
-  'aye-dil-mujhe-aisi-jagah-le-chal', // WP dump post contains verbatim copy of chhoti-si-ye-zindgani-re
+  'aye-dil-mujhe-aisi-jagah-le-chal',
 ]);
 
 // Confirmed false-positive OEM MIR matches (wrong song / non-OEM cover / sped-up)
@@ -221,7 +323,6 @@ for (const c of dump.categories) {
   catById.set(c.id, c);
 }
 
-// OEM-verified original studio BPMs & Talas (cross-referenced against Tunebat, SongBPM & original classic recordings)
 const KNOWN_BPMS = {
   'kal-ho-na-ho-har-ghadi-badal-rahi-hai': { bpm: 82, tala: 'keherwa' },
   'chura-liya-hai-tumne-jo': { bpm: 80, tala: 'keherwa' },
@@ -280,7 +381,6 @@ const KNOWN_BPMS = {
 };
 
 function matchPitchOnLine(line) {
-  // Pitch tokens [A-G](#|b)? stay case-sensitive so words like "for" never match "F".
   const patterns = [
     /(?:[Ff]lute|[Ss]cale|[Pp]itch|[Bb]ansuri|FLUTE|SCALE|PITCH|BANSURI)[^:\n]{0,28}[:=\-\s]\s*(?:[Ss]cale\s+)?([A-G](?:#|b)?)(?![A-Za-z#b])/,
     /\b(?:[Uu]sed|USED)\s+([A-G](?:#|b)?)(?![A-Za-z#b])\s*(?:[Nn]atural|[Ss]harp|[Ff]lat|[Bb]ass|[Mm]edium|[Ss]cale|[Ff]lute)?/,
@@ -296,25 +396,18 @@ function matchPitchOnLine(line) {
   return null;
 }
 
-/**
- * Case-sensitive musical key detection across first 30 lines, prioritizing "Flute used for notations / Sargam"
- * over generic "Original Scale" headers.
- */
 function detectScaleId(lines, defaultScale = null) {
   const headerBlock = lines.slice(0, 30).filter((l) => /(flute|scale|pitch|bansuri)/i.test(l));
-  // Pass 1: Explicit notation-flute headers
   for (const line of headerBlock) {
     if (!/(used for notation|flute used|for sargam)/i.test(line)) continue;
     const hit = matchPitchOnLine(line);
     if (hit) return hit;
   }
-  // Pass 2: Other headers excluding "original scale"
   for (const line of headerBlock) {
     if (/original scale/i.test(line)) continue;
     const hit = matchPitchOnLine(line);
     if (hit) return hit;
   }
-  // Pass 3: Fallback including "original scale"
   for (const line of headerBlock) {
     const hit = matchPitchOnLine(line);
     if (hit) return hit;
@@ -390,7 +483,6 @@ function isSectionHeader(line) {
   const kw = m[1].toLowerCase();
   const rest = t.slice(m[0].length);
   if (rest.length > 28) return false;
-  // Guard composer lines like "Music : Ajay Atul" or "Music by : Hemant Kumar"
   if (kw === 'music') {
     return /^[\s:\-\(\[\)\]]*(?:piece|interlude|prelude|intro|tune|solo|part|saxophone|sax|guitar|violin|piano|flute|trumpet|keyboard|humming|×?\d+|x?\d+)?[\s\)\]\[:.\-\/×x\d]*$/i.test(
       rest
@@ -447,7 +539,12 @@ function parseSargamSegment(segment, opts = {}) {
     lowercaseShuddha = false,
   } = opts;
   const tokens = [];
-  const seg = segment.replace(/\(\s*[x×]\s*\d+\s*\)/gi, '').trim();
+  // Normalize infix suffix-comma/dot (e.g. N,S -> ,NS, n.s -> ,ns) and leading prefix apostrophe before D/N
+  const seg = segment
+    .replace(/\(\s*[x×]\s*\d+\s*\)/gi, '')
+    .replace(/(?<![,.])([PDNdn])([,.])(?=[SRGMrgm])/g, ',$1')
+    .replace(/(^|[\s|(])['’]([NDnd])/g, '$1,$2')
+    .trim();
   if (!seg) return tokens;
 
   let i = 0;
@@ -628,7 +725,6 @@ function parseSargamSegment(segment, opts = {}) {
     pendingKan = null;
   }
 
-  // Handle trailing pendingKan left at the end of a segment
   if (pendingKan) {
     if (tokens.length > 0 && !tokens[tokens.length - 1].ornament) {
       tokens[tokens.length - 1].ornament = ['kan', pendingKan.swara, pendingKan.octave];
@@ -647,7 +743,7 @@ function parseSargamSegment(segment, opts = {}) {
   return tokens;
 }
 
-function detectMaConvention(post, lines, sargamLines, ragaRaw = '') {
+function detectMaConvention(categoryIds, lines, sargamLines, ragaRaw = '') {
   const rawJoined = sargamLines.join(' ');
   const fullLower = lines.join('\n').toLowerCase();
   if (/m[#\^]/i.test(rawJoined)) return 'M-is-shuddha';
@@ -668,7 +764,7 @@ function detectMaConvention(post, lines, sargamLines, ragaRaw = '') {
 
   if (upperCount >= 3 && lowerCount >= 3 && sameLineBoth) return 'M-is-tivra';
 
-  const catInfo = post.categories
+  const catInfo = (categoryIds || [])
     .map((id) => `${catById.get(id)?.slug || ''} ${catById.get(id)?.name || ''}`)
     .join(' ');
   const proseHeader = lines.slice(0, 15).join(' ');
@@ -763,65 +859,27 @@ const INLINE_INST_PREFIX_RX =
 
 let totalClampedNotes = 0;
 
-function parsePostToCompactSong(post) {
-  const slug = post.slug;
-  if (FEATURED_SLUGS.has(slug)) return null;
-  if (BROKEN_SOURCE_SLUGS.has(slug)) return null;
-
-  const title = cleanTitle(post.title.rendered);
-  const catSlugs = post.categories.map((id) => catById.get(id)?.slug || '');
-
-  if (
-    catSlugs.includes('blog') ||
-    catSlugs.includes('stories') ||
-    /contest|instrumelodies|how to|tips|lesson|tutorial|quiz|scale chart|about us/i.test(title)
-  ) {
-    return null;
-  }
-
-  const lines = htmlToLines(post.content.rendered);
-  const fullText = lines.join('\n');
+function compileSongFromLines({
+  slug,
+  title,
+  movie,
+  year,
+  composer,
+  singers,
+  era,
+  scaleId,
+  ragaRaw,
+  bpm,
+  tala,
+  url,
+  ytId,
+  categoryIds,
+  lines,
+}) {
   const sargamLineList = lines.filter(isSargamLine);
   if (sargamLineList.length < 3) return null;
 
-  const ytMatch = post.content.rendered.match(
-    /(?:youtube\.com\/(?:embed\/|watch\?v=|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/
-  );
-  const ytId = ytMatch ? ytMatch[1] : undefined;
-
-  const movieRaw = extractField(lines, /^(?:movie|film)\s*[:\-–]\s*(.+)$/i);
-  const movie = movieRaw
-    ? movieRaw.replace(/\(\s*\d{4}\s*\)/g, '').replace(/,\s*$/, '').trim()
-    : catSlugs.includes('devotional')
-    ? 'Traditional Bhajan'
-    : catSlugs.includes('sargam-notation-for-popular-tunes')
-    ? 'Popular Instrumental'
-    : 'Bollywood Classic';
-
-  const { era, year, catNames } = inferEraAndYear(post, lines, movieRaw);
-
-  const singerRaw =
-    extractField(lines, /^singers?\s*[:\-–]\s*(.+)$/i) ||
-    catNames.find((n) =>
-      /(Kishore|Lata|Rafi|Asha|Mukesh|Arijit|Sonu|Udit|Alka|Kumar Sanu|Jagjit|Hemant|Shreya|Manna|Talat|Yesudas)/i.test(
-        n
-      )
-    ) ||
-    'Classic Vocal';
-
-  const composerRaw =
-    extractField(lines, /^music(?:\s*(?:director|by))?\s*[:\-–]\s*(.+)$/i) ||
-    catNames.find((n) =>
-      /(Burman|Laxmikant|Shankar|Madan Mohan|Kalyanji|Naushad|Rahman|Pritam|Jatin|Khayyam|Salil|Nadeem|Anu Malik|Vishal|Mithoon)/i.test(
-        n
-      )
-    ) ||
-    'Bollywood Composer';
-
-  const ragaRaw =
-    extractField(lines, /^(?:based on\s*)?raa?g(?:a)?\s*[:\-–]\s*(.+)$/i) || 'Hindustani Sargam';
-
-  const maMode = detectMaConvention(post, lines, sargamLineList, ragaRaw);
+  const maMode = detectMaConvention(categoryIds, lines, sargamLineList, ragaRaw);
   const sargamJoined = sargamLineList.join(' ');
   const carnaticCount = (sargamJoined.match(/[SRGMPDNsrgmpdn][123]/g) || []).length;
   const carnatic = carnaticCount >= 3;
@@ -836,60 +894,6 @@ function parsePostToCompactSong(post) {
     lowercaseShuddha,
   };
 
-  const mir = mirCache[slug];
-  const mirValid = !MIR_BLOCKLIST.has(slug) && mir && mir.status === 'ok' && mir.oemVerified === true;
-  const explicitScale = detectScaleId(lines, null);
-  const mirScale = null; // FFT-aliased MIR keys disabled; rely on explicit header or sensible era fallback
-  const fallbackScale =
-    era === 'Retro Classics' ? 'G_BASS' : era === 'Modern Bollywood' ? 'E_BASS' : 'C_MEDIUM';
-  const scaleId = explicitScale || mirScale || fallbackScale;
-
-  const known = KNOWN_BPMS[slug];
-  let bpm = known?.bpm ?? 92;
-  let tala = known?.tala ?? 'keherwa';
-  if (!known) {
-    const pipeLines = sargamLineList.filter((l) => l.includes('|'));
-    const threeCellRatio =
-      pipeLines.length >= 3
-        ? pipeLines.filter((l) => {
-            const c = l.split('|').filter((x) => x.trim()).length;
-            return c === 3 || c === 6;
-          }).length / pipeLines.length
-        : 0;
-    const textSaysDadra =
-      /\b(dadra|waltz|6\/8|3\/4)\b/i.test(fullText) ||
-      (catSlugs.includes('ghazal') && threeCellRatio >= 0.5);
-
-    if (mirValid && mir.conf >= 0.32) {
-      bpm = mir.bpm;
-      tala = textSaysDadra || (mir.conf >= 0.45 && mir.tala === 'dadra') ? 'dadra' : 'keherwa';
-      const isSlowMood =
-        catSlugs.includes('sad') || catSlugs.includes('ghazal') || catSlugs.includes('romantic');
-      if (tala === 'keherwa' && bpm >= 118 && mir.onsetDensity < 4.5 && isSlowMood) {
-        bpm = Math.round(bpm / 2);
-      } else if (tala === 'keherwa' && bpm < 64 && mir.onsetDensity > 5.8) {
-        bpm = Math.round(bpm * 2);
-      }
-      bpm = Math.max(60, Math.min(148, bpm));
-    } else if (textSaysDadra) {
-      tala = 'dadra';
-      bpm = 114;
-    } else if (catSlugs.includes('sad') || catSlugs.includes('ghazal')) {
-      bpm = 80;
-    } else if (catSlugs.includes('romantic')) {
-      bpm = 88;
-    } else if (catSlugs.includes('devotional')) {
-      bpm = 90;
-    } else if (year >= 1990 && year <= 2005) {
-      bpm = 102;
-    } else {
-      bpm = 92;
-    }
-
-    if (bpm > 136) {
-      bpm = Math.max(60, Math.round(bpm / 2));
-    }
-  }
   const beatsPerBar = tala === 'dadra' ? 6 : 8;
 
   const firstSthayiIdx = lines.findIndex((l) =>
@@ -918,11 +922,8 @@ function parsePostToCompactSong(post) {
           line.trim()
         );
       const isChorusWord = /^(?:\s*[\(\[]?\s*)chorus\b/i.test(line.trim());
-      // Chorus: before a sargam line (or "Chorus: Aaa..") is a backing fill, not a lead verse
       const isChorusVocal =
-        isChorusWord &&
-        idx + 1 < lines.length &&
-        isRealVocalLyricLine(lines[idx + 1]);
+        isChorusWord && idx + 1 < lines.length && isRealVocalLyricLine(lines[idx + 1]);
 
       if (isVocalHeader || isChorusVocal) {
         inInterlude = false;
@@ -949,7 +950,7 @@ function parsePostToCompactSong(post) {
 
     if (!isSargamLine(line)) continue;
     if (inInterlude) continue;
-    if (rawNotes.length >= 240) break;
+    if (rawNotes.length >= 320) break;
 
     const prevLine = idx > 0 ? lines[idx - 1] : '';
     const lyricLine = isLyricLine(prevLine) && !INLINE_INST_PREFIX_RX.test(prevLine.trim()) ? prevLine : '';
@@ -989,7 +990,9 @@ function parsePostToCompactSong(post) {
       const cleanWord = (word || '')
         .replace(/^[A-Za-z ]+:\s*/, '')
         .replace(/[\(\[]\s*(?:avroh|aroh|music|interlude|flute)\s*[\)\]]/gi, '')
-        .replace(/^\(\s*[x×]?\s*\d+\s*\)$/, '')
+        .replace(/\s*\(\s*[x×]?\s*\d+\s*\)/gi, '')
+        .replace(/~+/g, '')
+        .replace(/\s+/g, ' ')
         .trim();
       const baseDur = parsed.length === 1 ? 0.85 : parsed.length === 2 ? 0.5 : 0.35;
       for (let k = 0; k < parsed.length; k++) {
@@ -1015,13 +1018,8 @@ function parsePostToCompactSong(post) {
       }
     };
 
-    if (sargamCells.length > 1) {
-      const parsedCells = [];
-      for (let c = 0; c < sargamCells.length; c++) {
-        const parsed = parseSargamSegment(sargamCells[c], parseOpts);
-        if (parsed.length > 0) parsedCells.push(parsed);
-      }
-      const G = parsedCells.length;
+    const alignAndPush = (parsedGroups) => {
+      const G = parsedGroups.length;
       const W = lyricCells.length;
       let prevWordIdx = -1;
       for (let g = 0; g < G; g++) {
@@ -1039,8 +1037,17 @@ function parsePostToCompactSong(post) {
           const s1 = Math.floor(((g + 1) * W) / G);
           word = lyricCells.slice(s0, Math.max(s0 + 1, s1)).join(' ').slice(0, 24);
         }
-        pushParsedGroup(parsedCells[g], word);
+        pushParsedGroup(parsedGroups[g], word);
       }
+    };
+
+    if (sargamCells.length > 1) {
+      const parsedCells = [];
+      for (let c = 0; c < sargamCells.length; c++) {
+        const parsed = parseSargamSegment(sargamCells[c], parseOpts);
+        if (parsed.length > 0) parsedCells.push(parsed);
+      }
+      alignAndPush(parsedCells);
     } else {
       const rawGroups = line.split(/\s+/).filter(Boolean);
       const cleanGroups = [];
@@ -1062,26 +1069,7 @@ function parsePostToCompactSong(post) {
         const parsed = parseSargamSegment(grp, parseOpts);
         if (parsed.length > 0) parsedGroups.push(parsed);
       }
-      const G = parsedGroups.length;
-      const W = lyricCells.length;
-      let prevWordIdx = -1;
-      for (let g = 0; g < G; g++) {
-        let word = '';
-        if (W === G) {
-          word = lyricCells[g] || '';
-        } else if (W > 0 && W < G) {
-          const wordIdx = Math.floor((g * W) / G);
-          if (wordIdx !== prevWordIdx) {
-            word = lyricCells[wordIdx] || '';
-            prevWordIdx = wordIdx;
-          }
-        } else if (W > G) {
-          const s0 = Math.floor((g * W) / G);
-          const s1 = Math.floor(((g + 1) * W) / G);
-          word = lyricCells.slice(s0, Math.max(s0 + 1, s1)).join(' ').slice(0, 24);
-        }
-        pushParsedGroup(parsedGroups[g], word);
-      }
+      alignAndPush(parsedGroups);
     }
 
     if (rawNotes.length > lineStartIdx) {
@@ -1113,7 +1101,6 @@ function parsePostToCompactSong(post) {
         playableSpan = targetSlot - breathGap;
         scale = playableSpan / Math.max(0.5, rawLineDur);
       }
-      // Guarantee min 0.25 duration per note can never overflow targetSlot
       while (lineNoteCount * 0.25 > playableSpan) {
         targetSlot += phraseQuantum;
         playableSpan = targetSlot - breathGap;
@@ -1130,7 +1117,6 @@ function parsePostToCompactSong(post) {
 
       const maxEnd = lineStartBeat + targetSlot - 0.35;
       if (cur > maxEnd) {
-        // Proportionally compress this line only if scaledDurs hit 0.25 floor and crept past maxEnd
         const actualSpan = cur - lineStartBeat;
         const fixScale = (maxEnd - lineStartBeat) / actualSpan;
         let fixCur = lineStartBeat;
@@ -1158,6 +1144,9 @@ function parsePostToCompactSong(post) {
   resolveOctaveContinuity(rawNotes);
   totalClampedNotes += enforcePlayableRange(rawNotes);
   recomputeOrnaments(rawNotes);
+
+  const finalRaga =
+    ragaRaw === 'Hindustani Sargam' ? inferThaatFromNotes(rawNotes) : ragaRaw;
 
   const lastNoteEnd = rawNotes[rawNotes.length - 1].startBeat + rawNotes[rawNotes.length - 1].durationBeats;
   const totalBeats = Math.max(
@@ -1224,15 +1213,15 @@ function parsePostToCompactSong(post) {
     t: title,
     m: truncateAtWord(movie, 46),
     y: year,
-    c: truncateAtWord(composerRaw, 38),
-    sg: truncateAtWord(singerRaw, 44),
+    c: truncateAtWord(composer, 38),
+    sg: truncateAtWord(singers, 44),
     e: era,
     d: difficulty,
     sc: scaleId,
-    r: truncateAtWord(ragaRaw, 36),
+    r: truncateAtWord(finalRaga, 36),
     tl: tala,
     bpm,
-    url: post.link,
+    url,
     ...(ytId ? { yt: ytId } : {}),
     tb: totalBeats,
     sec: sections,
@@ -1240,22 +1229,211 @@ function parsePostToCompactSong(post) {
   };
 }
 
+function parsePostToCompactSong(post) {
+  const slug = post.slug;
+  if (FEATURED_SLUGS.has(slug)) return null;
+  if (BROKEN_SOURCE_SLUGS.has(slug)) return null;
+
+  const override = songOverrides.postOverrides?.[slug] || null;
+  const title = override?.title || cleanTitle(post.title.rendered);
+  const catSlugs = post.categories.map((id) => catById.get(id)?.slug || '');
+
+  if (
+    !override &&
+    (catSlugs.includes('blog') ||
+      catSlugs.includes('stories') ||
+      /contest|instrumelodies|how to|tips|lesson|tutorial|quiz|scale chart|about us/i.test(title))
+  ) {
+    return null;
+  }
+
+  let lines = override?.customLines ? [...override.customLines] : htmlToLines(post.content.rendered);
+
+  if (override?.stopBeforeRegex) {
+    const stopRx = new RegExp(override.stopBeforeRegex, 'i');
+    const stopIdx = lines.findIndex((l) => stopRx.test(l));
+    if (stopIdx > 0) lines = lines.slice(0, stopIdx);
+  }
+
+  if (override?.sargamLineReplace || override?.lyricLineReplace) {
+    lines = lines.map((l) => {
+      let cur = l;
+      if (override.sargamLineReplace && isSargamLine(cur)) {
+        for (const [pat, rep] of override.sargamLineReplace) {
+          cur = cur.replace(new RegExp(pat, 'g'), rep);
+        }
+      } else if (override.lyricLineReplace && isLyricLine(cur)) {
+        for (const [pat, rep] of override.lyricLineReplace) {
+          cur = cur.replace(new RegExp(pat, 'gi'), rep);
+        }
+      }
+      return cur;
+    });
+  }
+
+  const fullText = lines.join('\n');
+  const sargamLineList = lines.filter(isSargamLine);
+  if (sargamLineList.length < 3) return null;
+
+  const ytMatch = post.content.rendered.match(
+    /(?:youtube\.com\/(?:embed\/|watch\?v=|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/
+  );
+  const ytId = ytMatch ? ytMatch[1] : undefined;
+
+  const movieRaw = extractField(lines, /^(?:movie|film)\s*[:\-–]\s*(.+)$/i);
+  const movie =
+    override?.movie ||
+    (movieRaw
+      ? movieRaw.replace(/\(\s*\d{4}\s*\)/g, '').replace(/,\s*$/, '').trim()
+      : catSlugs.includes('devotional')
+      ? 'Traditional Bhajan'
+      : catSlugs.includes('sargam-notation-for-popular-tunes')
+      ? 'Popular Instrumental'
+      : 'Bollywood Classic');
+
+  const inferred = inferEraAndYear(post, lines, movieRaw);
+  const year = override?.year ?? inferred.year;
+  const era = override?.era ?? inferred.era;
+  const catNames = inferred.catNames;
+
+  const singerRaw =
+    override?.singers ||
+    extractField(lines, /^singers?\s*[:\-–]\s*(.+)$/i) ||
+    catNames.find((n) =>
+      /(Kishore|Lata|Rafi|Asha|Mukesh|Arijit|Sonu|Udit|Alka|Kumar Sanu|Jagjit|Hemant|Shreya|Manna|Talat|Yesudas)/i.test(
+        n
+      )
+    ) ||
+    'Classic Vocal';
+
+  const composerRaw =
+    override?.composer ||
+    extractField(lines, /^music(?:\s*(?:director|by))?\s*[:\-–]\s*(.+)$/i) ||
+    catNames.find((n) =>
+      /(Burman|Laxmikant|Shankar|Madan Mohan|Kalyanji|Naushad|Rahman|Pritam|Jatin|Khayyam|Salil|Nadeem|Anu Malik|Vishal|Mithoon)/i.test(
+        n
+      )
+    ) ||
+    'Bollywood Composer';
+
+  const ragaRaw =
+    override?.raga ||
+    extractField(lines, /^(?:based on\s*)?raa?g(?:a)?\s*[:\-–]\s*(.+)$/i) ||
+    'Hindustani Sargam';
+
+  const mir = mirCache[slug];
+  const mirValid = !MIR_BLOCKLIST.has(slug) && mir && mir.status === 'ok' && mir.oemVerified === true;
+  const explicitScale = override?.scaleId || detectScaleId(lines, null);
+  const fallbackScale =
+    era === 'Retro Classics' ? 'G_BASS' : era === 'Modern Bollywood' ? 'E_BASS' : 'C_MEDIUM';
+  const scaleId = explicitScale || fallbackScale;
+
+  const known = KNOWN_BPMS[slug];
+  let bpm = override?.bpm ?? known?.bpm ?? 92;
+  let tala = override?.tala ?? known?.tala ?? 'keherwa';
+  if (!override?.bpm && !known) {
+    const pipeLines = sargamLineList.filter((l) => l.includes('|'));
+    const threeCellRatio =
+      pipeLines.length >= 3
+        ? pipeLines.filter((l) => {
+            const c = l.split('|').filter((x) => x.trim()).length;
+            return c === 3 || c === 6;
+          }).length / pipeLines.length
+        : 0;
+    const textSaysDadra =
+      /\b(dadra|waltz|6\/8|3\/4)\b/i.test(fullText) ||
+      (catSlugs.includes('ghazal') && threeCellRatio >= 0.5);
+
+    if (mirValid && mir.conf >= 0.32) {
+      bpm = mir.bpm;
+      tala = textSaysDadra || (mir.conf >= 0.45 && mir.tala === 'dadra') ? 'dadra' : 'keherwa';
+      const isSlowMood =
+        catSlugs.includes('sad') || catSlugs.includes('ghazal') || catSlugs.includes('romantic');
+      if (tala === 'keherwa' && bpm >= 118 && mir.onsetDensity < 4.5 && isSlowMood) {
+        bpm = Math.round(bpm / 2);
+      } else if (tala === 'keherwa' && bpm < 64 && mir.onsetDensity > 5.8) {
+        bpm = Math.round(bpm * 2);
+      }
+      bpm = Math.max(60, Math.min(148, bpm));
+    } else if (textSaysDadra) {
+      tala = 'dadra';
+      bpm = 114;
+    } else if (catSlugs.includes('sad') || catSlugs.includes('ghazal')) {
+      bpm = 80;
+    } else if (catSlugs.includes('romantic')) {
+      bpm = 88;
+    } else if (catSlugs.includes('devotional')) {
+      bpm = 90;
+    } else if (year >= 1990 && year <= 2005) {
+      bpm = 102;
+    } else {
+      bpm = 92;
+    }
+
+    if (bpm > 136) {
+      bpm = Math.max(60, Math.round(bpm / 2));
+    }
+  }
+
+  return compileSongFromLines({
+    slug,
+    title,
+    movie,
+    year,
+    composer: composerRaw,
+    singers: singerRaw,
+    era,
+    scaleId,
+    ragaRaw,
+    bpm,
+    tala,
+    url: post.link,
+    ytId,
+    categoryIds: post.categories,
+    lines,
+  });
+}
+
 fs.mkdirSync(OUT_DIR, { recursive: true });
 const compactSongs = [];
 const seenSlugs = new Set();
 const seenMelodyHashes = new Map();
 
-for (const post of dump.posts) {
-  const s = parsePostToCompactSong(post);
-  if (!s || seenSlugs.has(s.id)) continue;
+const registerSong = (s) => {
+  if (!s || seenSlugs.has(s.id)) return;
   const melHash = JSON.stringify(s.n.slice(0, 40).map((x) => [x[0], x[1]]));
   if (seenMelodyHashes.has(melHash)) {
     console.warn(`WARNING: Duplicate melody hash skipped: ${s.id} (matches ${seenMelodyHashes.get(melHash)})`);
-    continue;
+    return;
   }
   seenMelodyHashes.set(melHash, s.id);
   seenSlugs.add(s.id);
   compactSongs.push(s);
+};
+
+for (const post of dump.posts) {
+  registerSong(parsePostToCompactSong(post));
+}
+
+for (const add of songOverrides.additionalSongs || []) {
+  const s = compileSongFromLines({
+    slug: add.slug,
+    title: add.title,
+    movie: add.movie,
+    year: add.year,
+    composer: add.composer,
+    singers: add.singers,
+    era: add.era,
+    scaleId: add.scaleId,
+    ragaRaw: add.raga,
+    bpm: add.bpm,
+    tala: add.tala,
+    url: add.url,
+    ytId: add.ytId,
+    categoryIds: [],
+    lines: add.lines,
+  });
+  registerSong(s);
 }
 
 for (const k of Object.keys(KNOWN_BPMS)) {

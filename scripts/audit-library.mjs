@@ -19,18 +19,30 @@ let emptySections = 0;
 let pastTb = 0;
 let labelLeaks = 0;
 let meendDesyncs = 0;
+let selfKans = 0;
+let lyricArtifacts = 0;
+let genericRagas = 0;
 let invalidNotes = 0;
 let duplicateHashes = 0;
 
 let hugeLeaps = 0;
+let sameLineHugeLeaps = 0;
 let capHits = 0;
 let clampedSuspects = 0;
 const scaleDist = {};
+const ragaDist = {};
 const seenHashes = new Map();
+const byId = new Map();
 
 for (const song of lib) {
+  byId.set(song.id, song);
   scaleDist[song.sc] = (scaleDist[song.sc] || 0) + 1;
-  if (song.n.length >= 240) capHits++;
+  ragaDist[song.r] = (ragaDist[song.r] || 0) + 1;
+  if (song.r === 'Hindustani Sargam') {
+    genericRagas++;
+    failures.push(`Generic raga remaining in ${song.id}`);
+  }
+  if (song.n.length >= 320) capHits++;
 
   const melHash = JSON.stringify(song.n.slice(0, 40).map((x) => [x[0], x[1]]));
   if (seenHashes.has(melHash)) {
@@ -63,6 +75,10 @@ for (const song of lib) {
       labelLeaks++;
       failures.push(`Leaked label lyric in ${song.id}#${i}: "${lyr}"`);
     }
+    if (lyr && (/~~/.test(lyr) || /\(\s*[x×]?\s*\d+\s*\)/.test(lyr))) {
+      lyricArtifacts++;
+      failures.push(`Lyric artifact in ${song.id}#${i}: "${lyr}"`);
+    }
     if (ornType === 'meend' && i > 0) {
       const [pSw, pOct] = song.n[i - 1];
       if (graceSw !== pSw || graceOct !== pOct) {
@@ -72,9 +88,16 @@ for (const song of lib) {
         );
       }
     }
+    if (ornType === 'kan' && graceSw === sw && graceOct === oct) {
+      selfKans++;
+      failures.push(`Self-referential kan in ${song.id}#${i}: (${sw},${oct})`);
+    }
     if (i > 0) {
       const leap = Math.abs(semi(sw, oct) - semi(song.n[i - 1][0], song.n[i - 1][1]));
-      if (leap >= 12) hugeLeaps++;
+      if (leap >= 12) {
+        hugeLeaps++;
+        if (song.n[i - 1][5] !== 1) sameLineHugeLeaps++;
+      }
     }
     prevEnd = st + dur;
   }
@@ -88,18 +111,62 @@ for (const song of lib) {
   }
 }
 
-const byId = new Set(lib.map((s) => s.id));
-if (lib.length < 463) {
-  failures.push(`Song count ${lib.length} < 463`);
+if (lib.length < 467) {
+  failures.push(`Song count ${lib.length} < 467`);
 }
-if (!byId.has('mere-mehboob-qayamat-hogi')) {
-  failures.push('Missing iconic song: mere-mehboob-qayamat-hogi');
+for (const reqSlug of [
+  'mere-mehboob-qayamat-hogi',
+  'ek-pyar-ka-nagma',
+  'mere-sapno-ki-rani',
+  'zindagi-ek-safar-hai-suhana',
+  'chaudhvin-ka-chand-ho',
+]) {
+  if (!byId.has(reqSlug)) failures.push(`Missing rescued song: ${reqSlug}`);
 }
 if (byId.has('aye-dil-mujhe-aisi-jagah-le-chal')) {
   failures.push('Clone song still present: aye-dil-mujhe-aisi-jagah-le-chal');
 }
 
-console.log('=== Sargam Library Audit Summary ===');
+// Golden assertions
+const swCount = (s, sw) => (s ? s.n.filter((x) => x[0] === sw).length : -1);
+const paal = byId.get('o-paalanhaare');
+if (!paal || swCount(paal, 'Rk') !== 0 || swCount(paal, 'Gk') !== 0) {
+  failures.push(`Golden check failed on o-paalanhaare: Rk=${swCount(paal, 'Rk')}, Gk=${swCount(paal, 'Gk')}`);
+}
+const chup = byId.get('dil-ne-kaha-chupke-se');
+if (!chup || swCount(chup, 'Gk') !== 0) {
+  failures.push(`Golden check failed on dil-ne-kaha-chupke-se: Gk=${swCount(chup, 'Gk')}`);
+}
+const jab = byId.get('jab-koi-baat-bigad-jaaye');
+if (!jab || swCount(jab, 'Mt') < 4) {
+  failures.push(`Golden check failed on jab-koi-baat-bigad-jaaye: Mt=${swCount(jab, 'Mt')}`);
+}
+const hoth = byId.get('hothon-se-chhoo-lo-tum');
+if (!hoth || swCount(hoth, 'Mt') < 10) {
+  failures.push(`Golden check failed on hothon-se-chhoo-lo-tum: Mt=${swCount(hoth, 'Mt')}`);
+}
+const ek = byId.get('ek-ladki-ko-dekha-to');
+if (!ek || swCount(ek, 'Mt') !== 0) {
+  failures.push(`Golden check failed on ek-ladki-ko-dekha-to: Mt=${swCount(ek, 'Mt')}`);
+}
+const gul = byId.get('gulabi-ankhen-jo-teri-dekhi');
+if (!gul || swCount(gul, 'Mt') !== 0) {
+  failures.push(`Golden check failed on gulabi-ankhen-jo-teri-dekhi: Mt=${swCount(gul, 'Mt')}`);
+}
+const tere = byId.get('tere-bina-zindagi-se');
+if (!tere || tere.sc !== 'D_SHARP_BASS') {
+  failures.push(`Golden check failed on tere-bina-zindagi-se: sc=${tere?.sc}`);
+}
+const hero = byId.get('flute-theme-of-movie-hero');
+if (!hero || hero.y !== 1983 || hero.sc !== 'E_BASS') {
+  failures.push(`Golden check failed on flute-theme-of-movie-hero: y=${hero?.y} sc=${hero?.sc}`);
+}
+const tumile = byId.get('tu-mile-dil-khile');
+if (!tumile || swCount(tumile, 'Nk') < 5) {
+  failures.push(`Golden check failed on tu-mile-dil-khile: Nk=${swCount(tumile, 'Nk')}`);
+}
+
+console.log('=== Sargam Library v2.0 Audit Summary ===');
 console.log({
   songCount: lib.length,
   overlaps,
@@ -107,17 +174,20 @@ console.log({
   pastTb,
   duplicateHashes,
   labelLeaks,
+  lyricArtifacts,
+  selfKans,
+  genericRagas,
   meendDesyncs,
   invalidNotes,
-  hasMereMehboob: byId.has('mere-mehboob-qayamat-hogi'),
-  hasBrokenClone: byId.has('aye-dil-mujhe-aisi-jagah-le-chal'),
+  outOfRangeSuspects: clampedSuspects,
 });
 console.log('=== Informational Metrics ===');
 console.log({
   leapsGe12Semitones: hugeLeaps,
-  songsAt240Cap: capHits,
-  outOfRangeSuspects: clampedSuspects,
+  sameLineLeapsGe12: sameLineHugeLeaps,
+  songsAt320Cap: capHits,
   scaleDistribution: scaleDist,
+  topRagas: Object.entries(ragaDist).sort((a, b) => b[1] - a[1]).slice(0, 12),
 });
 
 if (failures.length > 0) {
@@ -126,4 +196,4 @@ if (failures.length > 0) {
   process.exit(1);
 }
 
-console.log('\nAUDIT PASSED: All regression checks green.');
+console.log('\nAUDIT PASSED: All v2.0 regression & golden checks green.');
