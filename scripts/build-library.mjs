@@ -379,9 +379,9 @@ const KNOWN_BPMS = {
 
 function matchPitchOnLine(line) {
   const patterns = [
-    /(?:[Ff]lute|[Ss]cale|[Pp]itch|[Bb]ansuri|FLUTE|SCALE|PITCH|BANSURI)[^:\n]{0,28}[:=\-\s]\s*(?:[Ss]cale\s+)?([A-G](?:#|b)?)(?![A-Za-z#b])/,
-    /\b(?:[Uu]sed|USED)\s+([A-G](?:#|b)?)(?![A-Za-z#b])\s*(?:[Nn]atural|[Ss]harp|[Ff]lat|[Bb]ass|[Mm]edium|[Ss]cale|[Ff]lute)?/,
-    /\b([A-G](?:#|b)?)(?![A-Za-z#b])\s*(?:[Nn]atural|[Ss]harp|[Ff]lat|[Bb]ass|[Mm]edium)?\s*(?:[Ff]lute|[Bb]ansuri|[Ss]cale|FLUTE|BANSURI|SCALE)\b/,
+    /(?:[Ff]lute|[Ss]cale|[Pp]itch|[Bb]ansuri|[Nn]otations?\s+on|FLUTE|SCALE|PITCH|BANSURI)[^:\n]{0,28}[:=\-\s]\s*(?:[Ss]cale\s+)?([A-G](?:#|b)?)(?![A-Za-z#b])/,
+    /\b(?:[Uu]sed|USED|[Pp]layed\s+on)\s+([A-G](?:#|b)?)(?![A-Za-z#b])\s*(?:[Nn]atural|[Ss]harp|[Ff]lat|[Bb]ass|[Mm]edium|[Tt]une|[Ss]cale|[Ff]lute)?/,
+    /\b([A-G](?:#|b)?)(?![A-Za-z#b])\s*(?:[Nn]atural|[Ss]harp|[Ff]lat|[Bb]ass|[Mm]edium|[Tt]une)?\s*(?:[Ff]lute|[Bb]ansuri|[Ss]cale|FLUTE|BANSURI|SCALE)\b/,
   ];
   for (const rx of patterns) {
     const m = line.match(rx);
@@ -394,7 +394,9 @@ function matchPitchOnLine(line) {
 }
 
 function detectScaleId(lines, defaultScale = null) {
-  const headerBlock = lines.slice(0, 30).filter((l) => /(flute|scale|pitch|bansuri)/i.test(l));
+  const headerBlock = lines
+    .slice(0, 30)
+    .filter((l) => /(flute|scale|pitch|bansuri|notations?\s+on)/i.test(l));
   for (const line of headerBlock) {
     if (!/(used for notation|flute used|for sargam)/i.test(line)) continue;
     const hit = matchPitchOnLine(line);
@@ -591,6 +593,13 @@ function isLyricLine(line) {
     return false;
   }
   if (/\b(you can|play this|this tune|as follows|scale as|repeat for|same notations)\b/i.test(t)) {
+    return false;
+  }
+  if (
+    /\b(find song lyrics|stream albums|buy guitars|find guitars|take music lessons|learn music theory|see indian cinema|stream hindi hits|stream desi music|bottom of form)\b/i.test(
+      t
+    )
+  ) {
     return false;
   }
   if (t.length > 92) return false;
@@ -964,6 +973,7 @@ function compileSongFromLines({
   era,
   scaleId,
   ragaRaw,
+  maModeOverride = null,
   bpm,
   tala,
   url,
@@ -974,7 +984,7 @@ function compileSongFromLines({
   const sargamLineList = lines.filter(isSargamLine);
   if (sargamLineList.length < 3) return null;
 
-  const maMode = detectMaConvention(categoryIds, lines, sargamLineList, ragaRaw);
+  const maMode = maModeOverride || detectMaConvention(categoryIds, lines, sargamLineList, ragaRaw);
   const sargamJoined = sargamLineList.join(' ');
   const carnaticCount = (sargamJoined.match(/[SRGMPDNsrgmpdn][123]/g) || []).length;
   const carnatic = carnaticCount >= 3;
@@ -1052,17 +1062,29 @@ function compileSongFromLines({
     const prevLine = idx > 0 ? lines[idx - 1] : '';
     const lyricLine = isLyricLine(prevLine) && !INLINE_INST_PREFIX_RX.test(prevLine.trim()) ? prevLine : '';
 
-    const sargamCells =
-      line.includes('|') || line.includes('\u0964')
-        ? line
-            .split(/[|\u0964]/)
-            .map((s) => s.trim())
-            .filter(Boolean)
-        : [line];
+    const hasBarDelim = line.includes('|') || line.includes('\u0964');
+    const slashCount = (line.match(/\//g) || []).length;
+    const useSlashDelim = !hasBarDelim && slashCount >= 2;
+    const sargamCells = hasBarDelim
+      ? line
+          .split(/[|\u0964]/)
+          .map((s) => s.trim())
+          .filter(Boolean)
+      : useSlashDelim
+      ? line
+          .split('/')
+          .map((s) => s.trim())
+          .filter(Boolean)
+      : [line];
     const lyricCells =
       lyricLine && (lyricLine.includes('|') || lyricLine.includes('\u0964'))
         ? lyricLine
             .split(/[|\u0964]/)
+            .map((s) => s.trim())
+            .filter(Boolean)
+        : lyricLine && useSlashDelim && (lyricLine.match(/\//g) || []).length >= 2
+        ? lyricLine
+            .split('/')
             .map((s) => s.trim())
             .filter(Boolean)
         : lyricLine
@@ -1492,6 +1514,7 @@ function parsePostToCompactSong(post) {
     era,
     scaleId,
     ragaRaw,
+    maModeOverride: override?.maMode || null,
     bpm,
     tala,
     url: post.link,

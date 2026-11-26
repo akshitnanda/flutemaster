@@ -8,6 +8,8 @@ const VALID_SWARAS = new Set(['S', 'Rk', 'R', 'Gk', 'G', 'M', 'Mt', 'P', 'Dk', '
 const SWARA_SEMI = { S: 0, Rk: 1, R: 2, Gk: 3, G: 4, M: 5, Mt: 6, P: 7, Dk: 8, D: 9, Nk: 10, N: 11 };
 const LABEL_LEAK_RX =
   /^(trumpet|keyboard|saxophone|violins?|voilins?|yoodling|yodelling|chorus|prelude|interlude|music|guitar|piano|humming)\b|:$/i;
+const AD_LEAK_RX =
+  /\b(find song lyrics|stream albums|buy guitars|find guitars|take music lessons|learn music theory|see indian cinema|stream hindi hits|stream desi music|bottom of form)\b/i;
 
 function semi(sw, oct) {
   return (SWARA_SEMI[sw] ?? 0) + (oct === 0 ? -12 : oct === 2 ? 12 : 0);
@@ -79,6 +81,10 @@ for (const song of lib) {
       lyricArtifacts++;
       failures.push(`Lyric artifact in ${song.id}#${i}: "${lyr}"`);
     }
+    if (lyr && AD_LEAK_RX.test(lyr)) {
+      lyricArtifacts++;
+      failures.push(`Ad-text leak in ${song.id}#${i}: "${lyr}"`);
+    }
     if (ornType === 'meend' && i > 0) {
       const [pSw, pOct] = song.n[i - 1];
       if (graceSw !== pSw || graceOct !== pOct) {
@@ -111,11 +117,26 @@ for (const song of lib) {
   }
 }
 
-if (lib.length < 463) {
-  failures.push(`Song count ${lib.length} < 463`);
+if (lib.length < 471) {
+  failures.push(`Song count ${lib.length} < 471`);
 }
 if (!byId.has('mere-mehboob-qayamat-hogi')) {
   failures.push('Missing rescued song: mere-mehboob-qayamat-hogi');
+}
+for (const reqId of [
+  'ek-pyar-ka-nagma',
+  'ek-ajnabi-haseena-se',
+  'mere-hath-mein',
+  'sara-pyar-tumhara',
+  'theme-tune-of-movie-bombay',
+  'tum-paas-aaye',
+  'tum-dil-ki-dhadkan-me',
+  'tere-liye',
+]) {
+  const s = byId.get(reqId);
+  if (!s || s.n.length < 24) {
+    failures.push(`Missing or too short rescued classic ${reqId}: notes=${s?.n.length || 0}`);
+  }
 }
 if (byId.has('aye-dil-mujhe-aisi-jagah-le-chal')) {
   failures.push('Clone song still present: aye-dil-mujhe-aisi-jagah-le-chal');
@@ -167,6 +188,42 @@ const jiyad = byId.get('tujhe-dekh-dekh-sona');
 const jiyadTaarS = jiyad ? jiyad.n.filter((x) => x[0] === 'S' && x[1] === 2).length : 0;
 if (!jiyad || jiyadTaarS < 4) {
   failures.push(`Golden check failed on tujhe-dekh-dekh-sona: taarS=${jiyadTaarS}`);
+}
+const ekPyar = byId.get('ek-pyar-ka-nagma');
+if (!ekPyar || swCount(ekPyar, 'M') < 10 || swCount(ekPyar, 'Nk') < 3 || ekPyar.sc !== 'C_SHARP_MEDIUM') {
+  failures.push(
+    `Golden check failed on ek-pyar-ka-nagma: M=${swCount(ekPyar, 'M')} Nk=${swCount(ekPyar, 'Nk')} sc=${ekPyar?.sc}`
+  );
+}
+const tpa = byId.get('tum-paas-aaye');
+const tpaMandraP = tpa ? tpa.n.filter((x) => x[0] === 'P' && x[1] === 0).length : 0;
+const tpaMandraN = tpa ? tpa.n.filter((x) => x[0] === 'N' && x[1] === 0).length : 0;
+if (!tpa || tpaMandraP < 2 || tpaMandraN < 2 || tpa.sc !== 'G_BASS') {
+  failures.push(`Golden check failed on tum-paas-aaye: ,P=${tpaMandraP} ,N=${tpaMandraN} sc=${tpa?.sc}`);
+}
+const mereHath = byId.get('mere-hath-mein');
+if (!mereHath || mereHath.sc !== 'A_MEDIUM' || mereHath.n.some((x) => /khwabo/i.test(x[4] || ''))) {
+  failures.push(`Golden check failed on mere-hath-mein: sc=${mereHath?.sc}`);
+}
+const roz = byId.get('roz-roz-ankhon-tale');
+if (!roz || roz.sc !== 'C_SHARP_MEDIUM') {
+  failures.push(`Golden check failed on roz-roz-ankhon-tale: sc=${roz?.sc}`);
+}
+const zindagi = byId.get('zindagi-ka-safar');
+if (!zindagi || zindagi.r !== 'Yaman Kalyan') {
+  failures.push(`Golden check failed on zindagi-ka-safar: r=${zindagi?.r}`);
+}
+const bombay = byId.get('theme-tune-of-movie-bombay');
+if (!bombay || bombay.r !== 'Kafi') {
+  failures.push(`Golden check failed on theme-tune-of-movie-bombay: r=${bombay?.r}`);
+}
+const sara = byId.get('sara-pyar-tumhara');
+if (!sara || sara.r !== 'Khamaj / Bilawal') {
+  failures.push(`Golden check failed on sara-pyar-tumhara: r=${sara?.r}`);
+}
+const naja = byId.get('na-ja-kahin-ab-na-ja');
+if (!naja || naja.n.length > 100) {
+  failures.push(`Golden check failed on na-ja-kahin-ab-na-ja: dual version leaked (${naja?.n.length} notes)`);
 }
 const rawSargamLyricRx = /^[SRGMPDNrgmdn\s.,…'’|~{}()\-0-9#^\[\]×x]+$/;
 let sargamAsLyric = 0;
