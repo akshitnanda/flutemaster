@@ -31,6 +31,8 @@ let hugeLeaps = 0;
 let sameLineHugeLeaps = 0;
 let capHits = 0;
 let clampedSuspects = 0;
+let offGridNotes = 0;
+let rushedSongs = 0;
 const scaleDist = {};
 const ragaDist = {};
 const seenHashes = new Map();
@@ -55,8 +57,17 @@ for (const song of lib) {
   }
 
   let prevEnd = -1;
+  let totalNoteBeats = 0;
   for (let i = 0; i < song.n.length; i++) {
     const [sw, oct, st, dur, lyr, _br, ornType, graceSw, graceOct] = song.n[i];
+    totalNoteBeats += dur;
+
+    if (Math.abs(st * 4 - Math.round(st * 4)) > 0.001 || Math.abs(dur * 4 - Math.round(dur * 4)) > 0.001) {
+      offGridNotes++;
+      if (offGridNotes <= 10) {
+        failures.push(`Off-grid note in ${song.id}#${i}: st=${st} dur=${dur}`);
+      }
+    }
 
     if (!VALID_SWARAS.has(sw) || (oct !== 0 && oct !== 1 && oct !== 2)) {
       invalidNotes++;
@@ -106,6 +117,12 @@ for (const song of lib) {
       }
     }
     prevEnd = st + dur;
+  }
+
+  const avgNoteMs = (totalNoteBeats / Math.max(1, song.n.length)) * (60000 / song.bpm);
+  if (avgNoteMs < 240 && song.id !== 'breathless') {
+    rushedSongs++;
+    failures.push(`Rushed tempo in ${song.id}: bpm=${song.bpm}, avgNoteMs=${Math.round(avgNoteMs)}ms < 240ms`);
   }
 
   for (const sec of song.sec) {
@@ -225,6 +242,19 @@ const naja = byId.get('na-ja-kahin-ab-na-ja');
 if (!naja || naja.n.length > 100) {
   failures.push(`Golden check failed on na-ja-kahin-ab-na-ja: dual version leaked (${naja?.n.length} notes)`);
 }
+for (const [id, expBpm] of [
+  ['ranjish-hi-sahi', 66],
+  ['hawayein-le-jaye-jane-kaha', 94],
+  ['sanam-re-sanam-re', 74],
+  ['dil-diyan-gallan', 84],
+  ['o-re-majhi-mere-sajan-hai-us-par', 66],
+  ['suno-na-sange-marmar-ki', 72],
+]) {
+  const s = byId.get(id);
+  if (!s || s.bpm !== expBpm) {
+    failures.push(`Golden BPM check failed on ${id}: expected=${expBpm}, got=${s?.bpm}`);
+  }
+}
 const rawSargamLyricRx = /^[SRGMPDNrgmdn\s.,…'’|~{}()\-0-9#^\[\]×x]+$/;
 let sargamAsLyric = 0;
 for (const song of lib) {
@@ -250,6 +280,8 @@ console.log({
   genericRagas,
   meendDesyncs,
   invalidNotes,
+  offGridNotes,
+  rushedSongs,
   outOfRangeSuspects: clampedSuspects,
 });
 console.log('=== Informational Metrics ===');

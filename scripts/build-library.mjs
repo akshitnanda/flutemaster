@@ -327,23 +327,23 @@ for (const c of dump.categories) {
 const KNOWN_BPMS = {
   'kal-ho-na-ho-har-ghadi-badal-rahi-hai': { bpm: 82, tala: 'keherwa' },
   'chura-liya-hai-tumne-jo': { bpm: 80, tala: 'keherwa' },
-  'mere-mehboob-qayamat-hogi': { bpm: 106, tala: 'keherwa' },
+  'mere-mehboob-qayamat-hogi': { bpm: 94, tala: 'keherwa' },
   'hothon-se-chhoo-lo-tum': { bpm: 99, tala: 'dadra' },
   'neele-neele-ambar-par': { bpm: 89, tala: 'keherwa' },
   'tu-mile-dil-khile': { bpm: 88, tala: 'keherwa' },
   'gulabi-ankhen-jo-teri-dekhi': { bpm: 105, tala: 'keherwa' },
-  'ye-sham-mastani': { bpm: 112, tala: 'keherwa' },
+  'ye-sham-mastani': { bpm: 102, tala: 'keherwa' },
   'kabhi-kabhi-mere-dil-me': { bpm: 78, tala: 'keherwa' },
   'chhoo-kar-mere-man-ko': { bpm: 96, tala: 'keherwa' },
   'tere-bina-zindagi-se': { bpm: 95, tala: 'keherwa' },
-  'tere-bina-jiya-jaye-na': { bpm: 108, tala: 'dadra' },
+  'tere-bina-jiya-jaye-na': { bpm: 96, tala: 'dadra' },
   'pyar-diwana-hota-hai': { bpm: 102, tala: 'keherwa' },
-  'o-mere-dil-ke-chain': { bpm: 109, tala: 'keherwa' },
+  'o-mere-dil-ke-chain': { bpm: 98, tala: 'keherwa' },
   'ek-ladki-ko-dekha-to': { bpm: 92, tala: 'keherwa' },
-  'bahut-pyar-karte-hai': { bpm: 110, tala: 'dadra' },
-  'jeena-yahan-merna-yahan': { bpm: 112, tala: 'keherwa' },
+  'bahut-pyar-karte-hai': { bpm: 96, tala: 'dadra' },
+  'jeena-yahan-merna-yahan': { bpm: 100, tala: 'keherwa' },
   'kora-kagaz-tha-yeh-mann-mera': { bpm: 96, tala: 'keherwa' },
-  'abhi-naa-jao-chhod-kar': { bpm: 104, tala: 'dadra' },
+  'abhi-naa-jao-chhod-kar': { bpm: 96, tala: 'dadra' },
   'tum-itna-jo-muskura-rahe-ho': { bpm: 80, tala: 'keherwa' },
   'jana-gana-mana-indias-national-anthem': { bpm: 96, tala: 'keherwa' },
   'vande-mataram-anand-math': { bpm: 88, tala: 'keherwa' },
@@ -356,9 +356,9 @@ const KNOWN_BPMS = {
   'zindagi-kaisi-hai-paheli-haye': { bpm: 97, tala: 'keherwa' },
   'musafir-hu-yaro': { bpm: 104, tala: 'keherwa' },
   'rimjhim-gire-sawan': { bpm: 92, tala: 'keherwa' },
-  'rimjhim-ke-geet-sawan-gaye': { bpm: 108, tala: 'dadra' },
+  'rimjhim-ke-geet-sawan-gaye': { bpm: 98, tala: 'dadra' },
   'neele-gagan-ke-tale': { bpm: 104, tala: 'dadra' },
-  'oh-re-taal-mile': { bpm: 108, tala: 'keherwa' },
+  'oh-re-taal-mile': { bpm: 96, tala: 'keherwa' },
   'mere-rang-mein-rangne-wali': { bpm: 98, tala: 'keherwa' },
   'tumhen-apna-banane-ki-kasam': { bpm: 98, tala: 'keherwa' },
   'tu-hi-re': { bpm: 100, tala: 'keherwa' },
@@ -368,13 +368,60 @@ const KNOWN_BPMS = {
   'saiyyan-heere-moti-main-na-chahu': { bpm: 86, tala: 'keherwa' },
   'pani-da-rang-wekh-ke': { bpm: 98, tala: 'keherwa' },
   'jeene-laga-hoon': { bpm: 90, tala: 'keherwa' },
-  'sanam-re-sanam-re': { bpm: 112, tala: 'keherwa' },
+  'sanam-re-sanam-re': { bpm: 74, tala: 'keherwa' },
   'janam-janam-janam': { bpm: 96, tala: 'keherwa' },
   'gerua-dhoop-se-nikal-ke': { bpm: 88, tala: 'keherwa' },
-  'hawayein-le-jaye-jane-kaha': { bpm: 126, tala: 'keherwa' },
-  'dil-diyan-gallan': { bpm: 105, tala: 'keherwa' },
+  'hawayein-le-jaye-jane-kaha': { bpm: 94, tala: 'keherwa' },
+  'dil-diyan-gallan': { bpm: 84, tala: 'keherwa' },
   'banarasiya-rang-me-bhang-ya': { bpm: 91, tala: 'keherwa' },
-  'kya-mausam-hai-chal-kahin-door-nikal-jaye': { bpm: 108, tala: 'keherwa' },
+  'kya-mausam-hai-chal-kahin-door-nikal-jaye': { bpm: 98, tala: 'keherwa' },
+  'ranjish-hi-sahi': { bpm: 66, tala: 'dadra' },
+  'sham-se-ankh-me-nami-si-hai': { bpm: 64, tala: 'dadra' },
+  'koi-ye-kaise-bataaye': { bpm: 64, tala: 'keherwa' },
+  'o-re-majhi-mere-sajan-hai-us-par': { bpm: 66, tala: 'keherwa' },
+  'man-re-tu-kahe-na-dhir-dhare': { bpm: 68, tala: 'keherwa' },
+  'suno-na-sange-marmar-ki': { bpm: 72, tala: 'keherwa' },
+  'tujhe-dekh-dekh-sona': { bpm: 86, tala: 'keherwa' },
+  'bheege-hont-tere': { bpm: 92, tala: 'keherwa' },
+  'kisi-patthar-ki-murat-se': { bpm: 78, tala: 'keherwa' },
+  'maine-tere-liye-hi-saat-rang-ke': { bpm: 84, tala: 'keherwa' },
+  'hum-bewafa-hargeez-na-the': { bpm: 96, tala: 'keherwa' },
+  'dil-ko-dekho-chehra-na-dekho': { bpm: 96, tala: 'keherwa' },
+  'kahin-karti-hogi': { bpm: 76, tala: 'keherwa' },
+  'woh-beete-din-yaad-hai': { bpm: 74, tala: 'keherwa' },
+  'banjara-jaise-banjare-ko-ghar': { bpm: 82, tala: 'keherwa' },
+  'koi-jab-tumhara-hriday-tod-de': { bpm: 76, tala: 'keherwa' },
+  'na-tum-hame-jano': { bpm: 78, tala: 'keherwa' },
+  'tum-mujhe-bhool-bhi-jao': { bpm: 76, tala: 'keherwa' },
+  'kaash-aisa-koi-manzar-hota': { bpm: 72, tala: 'dadra' },
+  'jhoomati-chali-hawa': { bpm: 78, tala: 'dadra' },
+  'hame-tumse-pyaar-kitna': { bpm: 78, tala: 'keherwa' },
+  'o-saiyyan-meri-adhuri-kahani': { bpm: 76, tala: 'keherwa' },
+  'tujhe-suraj-kahu-ya-chanda': { bpm: 78, tala: 'keherwa' },
+  'boro-asha-kore-esechhi': { bpm: 70, tala: 'keherwa' },
+  'bajlo-tomar-alor-benu-mahalaya': { bpm: 76, tala: 'dadra' },
+  'ye-raate-ye-mausam-ye-nadi-ka-kinara': { bpm: 88, tala: 'keherwa' },
+  'jab-koi-baat-bigad-jaaye': { bpm: 92, tala: 'keherwa' },
+  'tum-bin-jaun-kahan': { bpm: 88, tala: 'keherwa' },
+  'mera-dil-ye-pukare-aja': { bpm: 84, tala: 'keherwa' },
+  'santo-karam-ki-gati-nyari': { bpm: 78, tala: 'keherwa' },
+  'sanwaar-loon': { bpm: 96, tala: 'keherwa' },
+  'aate-jate-hanste-gaate': { bpm: 96, tala: 'keherwa' },
+  'ye-jeevan-hai': { bpm: 90, tala: 'keherwa' },
+  'bhigi-bhigi-rato-me': { bpm: 96, tala: 'keherwa' },
+  'babuji-dheere-chalna': { bpm: 96, tala: 'keherwa' },
+  'rang-barse-bhige-chunar-wali': { bpm: 98, tala: 'keherwa' },
+  'pardesiya-ye-sach-hai-piya': { bpm: 104, tala: 'keherwa' },
+  'kariye-na-kariye-na': { bpm: 104, tala: 'keherwa' },
+  'ye-zameen-ga-rahi-hai': { bpm: 108, tala: 'keherwa' },
+  'dekha-na-haay-re': { bpm: 108, tala: 'keherwa' },
+  'aur-kya-aur-kya-tum-aaye-to': { bpm: 96, tala: 'keherwa' },
+  'aha-rimjhim-ke-ye-pyare-pyare': { bpm: 92, tala: 'keherwa' },
+  'jaane-kya-baat-hai': { bpm: 88, tala: 'keherwa' },
+  'hai-duniya-usiki': { bpm: 92, tala: 'keherwa' },
+  'tumane-mujhe-dekha': { bpm: 94, tala: 'keherwa' },
+  'mushkil-hai-bahut-mushkil': { bpm: 78, tala: 'keherwa' },
+  'zindagi-ka-safar': { bpm: 84, tala: 'keherwa' },
 };
 
 function matchPitchOnLine(line) {
@@ -1121,21 +1168,21 @@ function compileSongFromLines({
       ) {
         cleanWord = '';
       }
-      const baseDur = parsed.length === 1 ? 0.85 : parsed.length === 2 ? 0.5 : 0.35;
+      const baseDur = parsed.length === 1 ? 1.0 : 0.5;
       for (let k = 0; k < parsed.length; k++) {
         const tok = parsed[k];
         let dur = tok.inMurki ? 0.25 : baseDur;
         if (tok.sustainCount > 0) {
-          dur += Math.min(2.4, tok.sustainCount * 0.35);
+          dur += Math.min(2.0, Math.ceil(tok.sustainCount * 0.5) * 0.5);
         }
-        dur = Math.min(3.25, Number(dur.toFixed(3)));
+        dur = Math.min(3.0, Math.max(0.25, Math.round(dur * 4) / 4));
 
         rawNotes.push({
           swara: tok.swara,
           octave: tok.octave,
           explicitOctave: tok.explicitOctave,
           lineIdx: currentLineIdx,
-          startBeat: Number(cursorBeat.toFixed(3)),
+          startBeat: Number(cursorBeat.toFixed(2)),
           durationBeats: dur,
           lyric: k === 0 ? cleanWord : '',
           breathAfter: false,
@@ -1200,65 +1247,18 @@ function compileSongFromLines({
     }
 
     if (rawNotes.length > lineStartIdx) {
-      const lineNoteCount = rawNotes.length - lineStartIdx;
       const closingNote = rawNotes[rawNotes.length - 1];
-      if (closingNote.durationBeats < 1.25) {
-        const extra = Math.min(0.55, closingNote.durationBeats * 0.45);
-        closingNote.durationBeats = Number((closingNote.durationBeats + extra).toFixed(3));
-        cursorBeat += extra;
+      if (closingNote.durationBeats < 1.0) {
+        closingNote.durationBeats = Number((closingNote.durationBeats + 0.5).toFixed(2));
+        cursorBeat += 0.5;
       }
 
       const rawLineDur = cursorBeat - lineStartBeat;
-      const desiredTotal = rawLineDur + 0.55;
-      let targetSlot = Math.max(
+      const desiredTotal = rawLineDur + 0.5;
+      const targetSlot = Math.max(
         phraseQuantum,
-        Math.round(desiredTotal / phraseQuantum) * phraseQuantum
+        Math.ceil(desiredTotal / phraseQuantum) * phraseQuantum
       );
-      const breathGap = 0.55;
-      let playableSpan = targetSlot - breathGap;
-      let scale = playableSpan / Math.max(0.5, rawLineDur);
-
-      while (scale < 0.76 && targetSlot < phraseQuantum * 4) {
-        targetSlot += phraseQuantum;
-        playableSpan = targetSlot - breathGap;
-        scale = playableSpan / Math.max(0.5, rawLineDur);
-      }
-      while (scale > 1.32 && targetSlot > phraseQuantum && lineNoteCount * 0.25 <= targetSlot - phraseQuantum - breathGap) {
-        targetSlot -= phraseQuantum;
-        playableSpan = targetSlot - breathGap;
-        scale = playableSpan / Math.max(0.5, rawLineDur);
-      }
-      while (lineNoteCount * 0.25 > playableSpan) {
-        targetSlot += phraseQuantum;
-        playableSpan = targetSlot - breathGap;
-        scale = playableSpan / Math.max(0.5, rawLineDur);
-      }
-
-      let cur = lineStartBeat;
-      for (let k = lineStartIdx; k < rawNotes.length; k++) {
-        const scaledDur = Math.max(0.25, Number((rawNotes[k].durationBeats * scale).toFixed(3)));
-        rawNotes[k].startBeat = Number(cur.toFixed(3));
-        rawNotes[k].durationBeats = scaledDur;
-        cur += scaledDur;
-      }
-
-      const maxEnd = lineStartBeat + targetSlot - 0.35;
-      if (cur > maxEnd) {
-        const actualSpan = cur - lineStartBeat;
-        const fixScale = (maxEnd - lineStartBeat) / actualSpan;
-        let fixCur = lineStartBeat;
-        for (let k = lineStartIdx; k < rawNotes.length; k++) {
-          const d = Math.max(0.25, Number((rawNotes[k].durationBeats * fixScale).toFixed(3)));
-          rawNotes[k].startBeat = Number(fixCur.toFixed(3));
-          rawNotes[k].durationBeats = d;
-          fixCur += d;
-        }
-        cur = fixCur;
-      }
-
-      if (cur > lineStartBeat + targetSlot) {
-        targetSlot += phraseQuantum;
-      }
 
       const lastNote = rawNotes[rawNotes.length - 1];
       lastNote.breathAfter = true;
@@ -1473,12 +1473,15 @@ function parsePostToCompactSong(post) {
       /\b(dadra|waltz|6\/8|3\/4)\b/i.test(fullText) ||
       (catSlugs.includes('ghazal') && threeCellRatio >= 0.5);
 
+    const isSlowCategory =
+      catSlugs.includes('sad') || catSlugs.includes('ghazal') || catSlugs.includes('devotional');
+
     if (mirValid && mir.conf >= 0.32) {
       bpm = mir.bpm;
       tala = textSaysDadra || (mir.conf >= 0.45 && mir.tala === 'dadra') ? 'dadra' : 'keherwa';
-      const isSlowMood =
-        catSlugs.includes('sad') || catSlugs.includes('ghazal') || catSlugs.includes('romantic');
-      if (tala === 'keherwa' && bpm >= 118 && mir.onsetDensity < 4.5 && isSlowMood) {
+      if (isSlowCategory && bpm >= 112) {
+        bpm = Math.round(bpm / 2);
+      } else if (catSlugs.includes('romantic') && bpm >= 120) {
         bpm = Math.round(bpm / 2);
       } else if (tala === 'keherwa' && bpm < 64 && mir.onsetDensity > 5.8) {
         bpm = Math.round(bpm * 2);
@@ -1486,7 +1489,7 @@ function parsePostToCompactSong(post) {
       bpm = Math.max(60, Math.min(148, bpm));
     } else if (textSaysDadra) {
       tala = 'dadra';
-      bpm = 114;
+      bpm = catSlugs.includes('ghazal') || catSlugs.includes('sad') ? 76 : 88;
     } else if (catSlugs.includes('sad') || catSlugs.includes('ghazal')) {
       bpm = 80;
     } else if (catSlugs.includes('romantic')) {
@@ -1494,7 +1497,7 @@ function parsePostToCompactSong(post) {
     } else if (catSlugs.includes('devotional')) {
       bpm = 90;
     } else if (year >= 1990 && year <= 2005) {
-      bpm = 102;
+      bpm = 94;
     } else {
       bpm = 92;
     }
