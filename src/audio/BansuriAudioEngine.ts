@@ -1491,7 +1491,13 @@ class BansuriAudioEngine {
     if (this.mutes.tabla || this.volumes.tabla <= 0.001) return;
 
     const step = ((beatNumber % song.beatsPerBar) + song.beatsPerBar) % song.beatsPerBar;
-    const dayanHz = song.scale.rootHz * 0.5;
+    let effectiveRootHz = song.scale.rootHz;
+    if (song.droneSwara) {
+      const semi = SWARA_META[song.droneSwara].semitonesFromSa;
+      const offset = semi > 7 ? semi - 12 : semi;
+      effectiveRootHz = song.scale.rootHz * Math.pow(2, offset / 12);
+    }
+    const dayanHz = effectiveRootHz * 0.5;
 
     if (song.tala === 'dadra') {
       if (step === 0) {

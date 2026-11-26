@@ -373,8 +373,8 @@ function isSargamLine(line) {
   ) {
     return false;
   }
-  const distinctNonM = new Set(cleaned.toUpperCase().match(/[SRGPDN]/g) || []);
-  return distinctNonM.size >= 2;
+  const distinctSwaras = new Set(cleaned.toUpperCase().match(/[SRGMPDN]/g) || []);
+  return distinctSwaras.size >= 2;
 }
 
 const SECTION_KEYWORDS_RX =
@@ -828,7 +828,7 @@ function parsePostToCompactSong(post) {
   const allSwaraLetters = sargamJoined.match(/[SRGMPDNsrgmpdn]/g) || [];
   const lowerSwaraLetters = sargamJoined.match(/[srgmpdn]/g) || [];
   const lowerRatio = lowerSwaraLetters.length / Math.max(1, allSwaraLetters.length);
-  const lowercaseShuddha = !carnatic && lowerRatio >= 0.6 && /[sp]/.test(sargamJoined);
+  const lowercaseShuddha = lowerRatio >= 0.6 && /[sp]/.test(sargamJoined);
   const parseOpts = {
     maMode,
     mPrimeIsTivra: Boolean(SLUG_OVERRIDES[slug]?.mPrimeIsTivra),
@@ -988,6 +988,7 @@ function parsePostToCompactSong(post) {
     const pushParsedGroup = (parsed, word) => {
       const cleanWord = (word || '')
         .replace(/^[A-Za-z ]+:\s*/, '')
+        .replace(/[\(\[]\s*(?:avroh|aroh|music|interlude|flute)\s*[\)\]]/gi, '')
         .replace(/^\(\s*[x×]?\s*\d+\s*\)$/, '')
         .trim();
       const baseDur = parsed.length === 1 ? 0.85 : parsed.length === 2 ? 0.5 : 0.35;
