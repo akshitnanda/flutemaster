@@ -115,6 +115,7 @@ export const EWI_PAD_LABELS = [
  */
 const SCALE_TO_SEMITONE_FROM_G: Record<string, number> = {
   D_BASS: -5,
+  D_SHARP_BASS: -4,
   E_BASS: -3,
   F_BASS: -2,
   F_SHARP_MEDIUM: -1,
@@ -122,6 +123,7 @@ const SCALE_TO_SEMITONE_FROM_G: Record<string, number> = {
   G_SHARP_MEDIUM: 1,
   A_MEDIUM: 2,
   A_SHARP_MEDIUM: 3,
+  B_MEDIUM: 4,
   C_MEDIUM: 5,
   C_SHARP_MEDIUM: 6,
 };
@@ -262,11 +264,10 @@ export function getEwiFingering(
 
   // Eastar EDA-100 Mode 01 (Saxophone Fingering — Factory Default):
   // Mirrors real Alto Saxophone fingerings with noiseless touch sensors & rear Octave Pads!
+  // On real sax, Mandra P..N (written D4..F#4) sit in the neutral register (octaveShift = 0).
   const semi = SWARA_META[swara].semitonesFromSa;
   let octaveShift: -1 | 0 | 1 = 0;
-  if (octave === 'mandra') {
-    octaveShift = -1;
-  } else if (octave === 'taar' || (octave === 'madhya' && semi >= 7)) {
+  if (octave === 'taar' || (octave === 'madhya' && semi >= 7)) {
     octaveShift = 1;
   }
 
@@ -359,16 +360,12 @@ export function getEwiFingering(
       activeOrnament === 'meend'
         ? 'Meend Glide: Press the Right-Thumb Pitch Bend button smoothly while moving between notes!'
         : 'Gamak Expression: Gently pulse the Pitch Bend button + breath pressure for vocal vibrato.';
-  } else if (!coachingTip && octaveShift !== 0) {
-    coachingTip =
-      octaveShift === 1
-        ? 'Upper Register: Rest Left Thumb on rear OCT+ pad (zero overblowing needed!).'
-        : 'Lower Register: Rest Left Thumb on rear OCT− pad with relaxed airflow.';
+  } else if (!coachingTip && octaveShift === 1) {
+    coachingTip = 'Upper Register: Rest Left Thumb on rear OCT+ pad (zero overblowing needed!).';
   }
 
   const parts: string[] = [];
   if (octaveShift === 1) parts.push('OCT+');
-  else if (octaveShift === -1) parts.push('OCT-');
   if (auxPads.length > 0) parts.push(auxPads[0]);
   if (pitchBendActive) parts.push('PB');
 

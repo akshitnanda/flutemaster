@@ -9,6 +9,14 @@ export const BANSURI_SCALES: Record<string, BansuriScale> = {
     lengthInches: 33,
     character: 'Ultra-deep, resonant concert bass Bansuri for meditative melodies',
   },
+  D_SHARP_BASS: {
+    id: 'D_SHARP_BASS',
+    name: 'D# / Eb Bass',
+    rootNote: 'D#4',
+    rootHz: 311.13,
+    lengthInches: 31.5,
+    character: 'Warm concert bass-Eb scale bridging deep D Bass and lyrical E Bass',
+  },
   E_BASS: {
     id: 'E_BASS',
     name: 'E Bass',
@@ -64,6 +72,14 @@ export const BANSURI_SCALES: Record<string, BansuriScale> = {
     rootHz: 466.16,
     lengthInches: 21,
     character: 'Crisp vocal-friendly medium Bansuri suited for agile Bollywood phrasing',
+  },
+  B_MEDIUM: {
+    id: 'B_MEDIUM',
+    name: 'B Natural Medium',
+    rootNote: 'B4',
+    rootHz: 493.88,
+    lengthInches: 20,
+    character: 'Bright medium-scale Bansuri (Safed 7) common across classic & 90s hits',
   },
   C_MEDIUM: {
     id: 'C_MEDIUM',

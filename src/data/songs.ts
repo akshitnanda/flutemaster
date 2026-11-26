@@ -152,26 +152,28 @@ const lagJaGaleSeq = buildNotes('lag-ja-gale', [
 
   // Bars 7-9 (36 -> 54): Antara — Humko mili hai aaj ye ghadiyaan naseeb se
   { swara: 'S', beats: 1.0, lyric: 'Hum-', hindi: 'हम-' },
-  { swara: 'P', beats: 1.25, lyric: '-ko', hindi: '-को', ornament: { type: 'meend', graceSwara: 'S', graceOctave: 'madhya', label: 'Meend' } },
-  { swara: 'M', beats: 0.75, lyric: 'mi-', hindi: 'मि-' },
+  { swara: 'P', beats: 1.0, lyric: '-ko', hindi: '-को', ornament: { type: 'meend', graceSwara: 'S', graceOctave: 'madhya', label: 'Meend' } },
+  { swara: 'Mt', beats: 0.5, lyric: 'mi-', hindi: 'मि-' },
   { swara: 'P', beats: 1.0, lyric: '-li', hindi: '-ली' },
   { swara: 'P', beats: 0.75, lyric: 'hai', hindi: 'हैं' },
-  { swara: 'S', octave: 'taar', beats: 1.25, lyric: 'aaj', hindi: 'आज' },
+  { swara: 'S', octave: 'taar', beats: 0.5, lyric: 'aaj', hindi: 'आज' },
+  { swara: 'D', beats: 0.5, lyric: '...', hindi: '' },
+  { swara: 'P', beats: 0.25, lyric: '...', hindi: '' },
+  { swara: 'M', beats: 0.5, lyric: '...', hindi: '' },
 
-  { swara: 'D', beats: 1.0, lyric: 'ye', hindi: 'ये' },
-  { swara: 'P', beats: 0.75, lyric: '...', hindi: '' },
-  { swara: 'M', beats: 1.25, lyric: 'gha-', hindi: 'घ-' },
-  { swara: 'S', beats: 0.75, lyric: '-di-', hindi: '-डि-' },
-  { swara: 'M', beats: 1.5, lyric: '-yaan', hindi: '-याँ', breath: 0.75 },
+  { swara: 'M', beats: 1.0, lyric: 'ye', hindi: 'ये' },
+  { swara: 'S', beats: 1.0, lyric: 'gha-', hindi: 'घ-' },
+  { swara: 'M', beats: 1.5, lyric: '-di-', hindi: '-डि-' },
+  { swara: 'M', beats: 2.0, lyric: '-yaan', hindi: '-याँ', breath: 0.5 },
 
   { swara: 'D', beats: 1.0, lyric: 'na-', hindi: 'न-' },
   { swara: 'P', beats: 1.0, lyric: '-seeb', hindi: '-सीब', ornament: { type: 'gamak', label: 'Gamak' } },
-  { swara: 'M', beats: 1.0, lyric: 'se', hindi: 'से' },
-  { swara: 'G', beats: 2.0, lyric: '...', hindi: '...', breath: 1.0 },
+  { swara: 'M', beats: 1.0, lyric: '...', hindi: '' },
+  { swara: 'G', beats: 2.0, lyric: 'se', hindi: 'से', breath: 1.0 },
 ]);
 
 /* ==========================================================================
-   3. ROOP TERA MASTANA (1969 — Retro Classics · A Medium · 84 BPM · Keherwa 8)
+   3. ROOP TERA MASTANA (1969 — Retro Classics · A Medium · 83 BPM · Keherwa 8)
       True syncopated S.D. Burman / Kishore Kumar vocal phrasing
    ========================================================================== */
 const roopTeraSeq = buildNotes('roop-tera-mastana', [
@@ -218,18 +220,19 @@ const roopTeraSeq = buildNotes('roop-tera-mastana', [
   { swara: 'N', beats: 1.0, lyric: 'hai', hindi: 'है' },
   { swara: 'P', beats: 1.5, lyric: '...', hindi: '', ornament: { type: 'meend', graceSwara: 'N', graceOctave: 'madhya', label: 'Meend' }, breath: 1.0 },
 
-  // Bar 4 (24 -> 32, 5.71s): Aaj nashe mein saara jahaan hai
+  // Bar 4 (24 -> 32, 5.78s): Aaj nashe mein saara jahaan hai
   { swara: 'D', beats: 0.5, lyric: 'Aaj', hindi: 'आज' },
   { swara: 'S', octave: 'taar', beats: 1.0, lyric: 'na-', hindi: 'न-' },
   { swara: 'D', beats: 0.5, lyric: '-she', hindi: '-शे' },
   { swara: 'S', octave: 'taar', beats: 1.0, lyric: 'mein', hindi: 'में' },
-  { swara: 'G', beats: 0.5, lyric: 'saa-', hindi: 'सा-' },
-  { swara: 'R', beats: 0.5, lyric: '-ra', hindi: '-रा' },
-  { swara: 'G', beats: 0.5, lyric: 'ja-', hindi: 'ज-' },
-  { swara: 'R', beats: 0.5, lyric: '...', hindi: '' },
-  { swara: 'R', beats: 0.5, lyric: '...', hindi: '' },
-  { swara: 'G', beats: 0.5, lyric: '-haan', hindi: '-हाँ' },
-  { swara: 'M', beats: 1.25, lyric: 'hai', hindi: 'है', ornament: { type: 'meend', graceSwara: 'G', graceOctave: 'madhya', label: 'Meend' }, breath: 0.75 },
+  { swara: 'G', octave: 'taar', beats: 0.5, lyric: 'saa-', hindi: 'सा-' },
+  { swara: 'R', octave: 'taar', beats: 0.5, lyric: '-ra', hindi: '-रा' },
+  { swara: 'G', octave: 'taar', beats: 0.5, lyric: 'ja-', hindi: 'ज-' },
+  { swara: 'S', octave: 'taar', beats: 0.5, lyric: '...', hindi: '' },
+  { swara: 'R', octave: 'taar', beats: 0.5, lyric: '...', hindi: '' },
+  { swara: 'R', octave: 'taar', beats: 0.5, lyric: '-haan', hindi: '-हाँ' },
+  { swara: 'G', octave: 'taar', beats: 0.5, lyric: '...', hindi: '' },
+  { swara: 'M', octave: 'taar', beats: 0.75, lyric: 'hai', hindi: 'है', ornament: { type: 'meend', graceSwara: 'G', graceOctave: 'taar', label: 'Meend' }, breath: 0.75 },
 ]);
 
 /* ==========================================================================
@@ -304,17 +307,17 @@ const pehlaNashaSeq = buildNotes('pehla-nasha', [
 
   // Bar 3 (16 -> 24, 6.32s): Kar loon main kya apna haal, aye dil-e-beqaraar
   { swara: 'S', beats: 0.5, lyric: 'Kar', hindi: 'कर' },
-  { swara: 'Nk', octave: 'mandra', beats: 0.5, lyric: 'loon', hindi: 'लूँ' },
+  { swara: 'N', octave: 'mandra', beats: 0.5, lyric: 'loon', hindi: 'लूँ' },
   { swara: 'D', octave: 'mandra', beats: 0.5, lyric: 'main', hindi: 'मैं' },
-  { swara: 'Nk', octave: 'mandra', beats: 0.5, lyric: 'kya', hindi: 'क्या' },
+  { swara: 'N', octave: 'mandra', beats: 0.5, lyric: 'kya', hindi: 'क्या' },
   { swara: 'S', beats: 1.5, lyric: 'ap-', hindi: 'अप-' },
   { swara: 'M', beats: 0.5, lyric: '-na', hindi: '-ना' },
   { swara: 'G', beats: 0.5, lyric: 'haal', hindi: 'हाल', breath: 0.5 },
 
   { swara: 'S', beats: 0.25, lyric: 'aye', hindi: 'ऐ' },
-  { swara: 'Nk', octave: 'mandra', beats: 0.25, lyric: 'dil-', hindi: 'दिल-' },
+  { swara: 'N', octave: 'mandra', beats: 0.25, lyric: 'dil-', hindi: 'दिल-' },
   { swara: 'D', octave: 'mandra', beats: 0.25, lyric: '-e-', hindi: '-ए-' },
-  { swara: 'Nk', octave: 'mandra', beats: 0.25, lyric: 'be-', hindi: 'बे-' },
+  { swara: 'N', octave: 'mandra', beats: 0.25, lyric: 'be-', hindi: 'बे-' },
   { swara: 'S', beats: 0.5, lyric: '-ka-', hindi: '-क़-' },
   { swara: 'M', beats: 0.5, lyric: '...', hindi: '' },
   { swara: 'G', beats: 0.25, lyric: '...', hindi: '' },
@@ -322,7 +325,7 @@ const pehlaNashaSeq = buildNotes('pehla-nasha', [
 
   // Bar 4 (24 -> 32, 6.32s): Udta hi phiroon in hawaaon mein kahin
   { swara: 'S', octave: 'taar', beats: 0.75, lyric: 'Ud-', hindi: 'उड़-' },
-  { swara: 'Nk', beats: 0.5, lyric: '-ta', hindi: '-ता' },
+  { swara: 'N', beats: 0.5, lyric: '-ta', hindi: '-ता' },
   { swara: 'S', octave: 'taar', beats: 0.5, lyric: 'hi', hindi: 'ही' },
   { swara: 'P', beats: 1.5, lyric: 'phi-', hindi: 'फि-', ornament: { type: 'meend', graceSwara: 'S', graceOctave: 'taar', label: 'Meend' } },
   { swara: 'D', beats: 0.5, lyric: '-roon', hindi: '-रूँ' },
@@ -377,8 +380,7 @@ const churaKeDilSeq = buildNotes('chura-ke-dil-mera', [
   { swara: 'M', beats: 0.5, lyric: 'ki', hindi: 'की' },
   { swara: 'P', beats: 0.5, lyric: 'la-', hindi: 'ल-' },
   { swara: 'D', beats: 1.0, lyric: '-gi', hindi: '-गी' },
-  { swara: 'G', beats: 1.5, lyric: '...', hindi: '' },
-  { swara: 'S', octave: 'taar', beats: 1.5, lyric: 'ooh', hindi: 'ओ', ornament: { type: 'meend', graceSwara: 'G', graceOctave: 'madhya', label: 'Meend' }, breath: 1.0 },
+  { swara: 'G', beats: 3.0, lyric: '...', hindi: '', breath: 1.0 },
 ]);
 
 /* ==========================================================================
@@ -435,21 +437,27 @@ const tumHiHoSeq = buildNotes('tum-hi-ho', [
   { swara: 'P', octave: 'mandra', beats: 0.75, lyric: 'hi', hindi: 'ही' },
   { swara: 'D', octave: 'mandra', beats: 2.75, lyric: 'ho', hindi: 'हो', ornament: { type: 'gamak', label: 'Gamak' }, breath: 1.0 },
 
-  // Bar 5 (32 -> 40, 5.11s): Chain bhi, mera dard bhi, meri aashiqui ab tum hi ho
+  // Bar 5 (32 -> 40, 5.11s): Chain bhi, mera dard bhi
   { swara: 'G', beats: 0.75, lyric: 'Chain', hindi: 'चैन' },
   { swara: 'S', beats: 0.5, lyric: 'bhi', hindi: 'भी' },
-  { swara: 'R', beats: 0.75, lyric: '...', hindi: '' },
-  { swara: 'S', beats: 0.25, lyric: 'me-', hindi: 'मे-' },
-  { swara: 'R', beats: 0.25, lyric: '-ra', hindi: '-रा' },
+  { swara: 'R', beats: 1.0, lyric: '...', hindi: '' },
+  { swara: 'S', beats: 0.5, lyric: 'me-', hindi: 'मे-' },
+  { swara: 'R', beats: 0.5, lyric: '-ra', hindi: '-रा' },
   { swara: 'G', beats: 0.75, lyric: 'dard', hindi: 'दर्द' },
   { swara: 'S', beats: 0.5, lyric: 'bhi', hindi: 'भी' },
-  { swara: 'R', beats: 0.75, lyric: 'aashiqui', hindi: 'आशिक़ी' },
-  { swara: 'N', octave: 'mandra', beats: 0.5, lyric: '...', hindi: '' },
-  { swara: 'R', beats: 0.5, lyric: 'ab', hindi: 'अब' },
-  { swara: 'S', beats: 0.5, lyric: 'tum', hindi: 'तुम' },
-  { swara: 'N', octave: 'mandra', beats: 0.5, lyric: 'hi', hindi: 'ही' },
-  { swara: 'P', octave: 'mandra', beats: 0.5, lyric: '...', hindi: '' },
-  { swara: 'D', octave: 'mandra', beats: 0.75, lyric: 'ho', hindi: 'हो', breath: 0.25 },
+  { swara: 'R', beats: 2.5, lyric: '...', hindi: '', breath: 1.0 },
+
+  // Bar 6 (40 -> 48, 5.11s): Meri aashiqui ab tum hi ho
+  { swara: 'N', octave: 'mandra', beats: 0.5, lyric: 'Me-', hindi: 'मे-' },
+  { swara: 'N', octave: 'mandra', beats: 0.5, lyric: '-ri', hindi: '-री' },
+  { swara: 'N', octave: 'mandra', beats: 0.75, lyric: 'aa-', hindi: 'आ-' },
+  { swara: 'R', beats: 0.75, lyric: '-shi-', hindi: '-शि-' },
+  { swara: 'S', beats: 0.75, lyric: '-qui', hindi: '-क़ी' },
+  { swara: 'N', octave: 'mandra', beats: 0.5, lyric: 'ab', hindi: 'अब' },
+  { swara: 'D', octave: 'mandra', beats: 0.5, lyric: '...', hindi: '' },
+  { swara: 'N', octave: 'mandra', beats: 0.5, lyric: 'tum', hindi: 'तुम' },
+  { swara: 'P', octave: 'mandra', beats: 0.5, lyric: 'hi', hindi: 'ही' },
+  { swara: 'D', octave: 'mandra', beats: 1.75, lyric: 'ho', hindi: 'हो', ornament: { type: 'gamak', label: 'Gamak' }, breath: 1.0 },
 ]);
 
 /* ==========================================================================
@@ -621,13 +629,13 @@ export const SONGS: Song[] = [
     tala: 'dadra',
     talaLabel: 'Dadra Waltz (6 beats)',
     beatsPerBar: 6,
-    bpm: 98,
+    bpm: 128,
     featured: true,
     sourceUrl: 'https://notesandsargam.com/lag-ja-gale/',
     youtubeId: 'wriuhEC9B5A',
     youtubeTitle: 'Lag Ja Gale — Flute Cover by Rajesh Cherthala (Tribute to Lata Mangeshkar)',
     description:
-      'Timeless Raag Pahadi waltz ear-synced directly to Lata Mangeshkar’s 1964 recording & Rajesh Cherthala’s classic rendition.',
+      'Timeless Raag Pahadi Dadra waltz — Bansuri E-scale adaptation synced to Rajesh Cherthala’s classic rendition.',
     sections: [
       { id: 'mukhda', name: 'Mukhda (Lag Ja Gale)', startBeat: 0, endBeat: 24 },
       { id: 'shayad', name: 'Shayad Phir', startBeat: 24, endBeat: 36 },
@@ -646,7 +654,7 @@ export const SONGS: Song[] = [
     era: 'Retro Classics',
     difficulty: 'Beginner',
     scale: BANSURI_SCALES.A_MEDIUM,
-    raga: 'Khamaj / Bhupali',
+    raga: 'Bilawal Thaat',
     tala: 'keherwa',
     talaLabel: 'Keherwa (8 beats)',
     beatsPerBar: 8,
@@ -730,7 +738,8 @@ export const SONGS: Song[] = [
     era: '90s Golden Era',
     difficulty: 'Beginner',
     scale: BANSURI_SCALES.C_MEDIUM,
-    raga: 'Bilawal Thaat',
+    droneSwara: 'R',
+    raga: 'Kafi (Re-tonic) · Bilawal notes',
     tala: 'keherwa',
     talaLabel: 'Keherwa (8 beats)',
     beatsPerBar: 8,
@@ -757,6 +766,7 @@ export const SONGS: Song[] = [
     era: 'Modern Bollywood',
     difficulty: 'Beginner',
     scale: BANSURI_SCALES.A_MEDIUM,
+    droneSwara: 'D',
     raga: 'Asavari / Relative Bilawal',
     tala: 'keherwa',
     talaLabel: 'Keherwa (8 beats)',
@@ -770,7 +780,7 @@ export const SONGS: Song[] = [
       'Soulful 94 BPM modern anthem synced to Arijit Singh’s syncopated "Kyunki tum hi ho" chorus in relative Dha tonic.',
     sections: [
       { id: 'verse', name: 'Verse (Hum Tere Bin)', startBeat: 0, endBeat: 16 },
-      { id: 'chorus', name: 'Chorus (Tum Hi Ho)', startBeat: 16, endBeat: 40 },
+      { id: 'chorus', name: 'Chorus (Tum Hi Ho)', startBeat: 16, endBeat: 48 },
     ],
     notes: tumHiHoSeq.notes,
     totalBeats: tumHiHoSeq.totalBeats,
@@ -785,7 +795,8 @@ export const SONGS: Song[] = [
     era: 'Modern Bollywood',
     difficulty: 'Beginner',
     scale: BANSURI_SCALES.C_MEDIUM,
-    raga: 'Bilawal Thaat',
+    droneSwara: 'R',
+    raga: 'Kafi (Re-tonic) · Bilawal notes',
     tala: 'keherwa',
     talaLabel: 'Keherwa (8 beats)',
     beatsPerBar: 8,
@@ -797,7 +808,7 @@ export const SONGS: Song[] = [
       'Authentic 94 BPM Pritam/Arijit chorus hook (S–G–R–G–R–S–,N | P–P–P–D–P–M–G–R) on C Natural Medium.',
     sections: [
       { id: 'mukhda', name: 'Hook (Kesariya Tera)', startBeat: 0, endBeat: 16 },
-      { id: 'antara', name: 'Verse (Din Beete)', startBeat: 16, endBeat: 32 },
+      { id: 'antara', name: 'Hook II (Din Beete)', startBeat: 16, endBeat: 32 },
     ],
     notes: kesariyaSeq.notes,
     totalBeats: kesariyaSeq.totalBeats,
@@ -812,7 +823,7 @@ export const SONGS: Song[] = [
     era: 'Modern Bollywood',
     difficulty: 'Intermediate',
     scale: BANSURI_SCALES.E_BASS,
-    raga: 'Bilawal / Khamaj',
+    raga: 'Bilawal Thaat',
     tala: 'keherwa',
     talaLabel: 'Slow Ballad (8 beats)',
     beatsPerBar: 8,

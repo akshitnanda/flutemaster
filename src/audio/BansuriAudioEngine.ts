@@ -9,7 +9,7 @@ import {
   SongNote,
   SwaraId,
 } from '../types/music';
-import { getFrequencyHz } from '../data/sargam';
+import { getFrequencyHz, SWARA_META } from '../data/sargam';
 import { getHarmonicaTab } from '../data/instruments';
 import { DEFAULT_EWI_SETTINGS } from '../data/ewi';
 
@@ -105,6 +105,7 @@ class BansuriAudioEngine {
   private tanpuraTimer: number | null = null;
   private tanpuraStringIdx = 0;
   private currentScaleHz = 392.0;
+  private currentDroneSwara: SwaraId | undefined = undefined;
 
   // True monophonic single-breath Bansuri & EWI voices + general voice cleanup
   private monoBansuri: MonoBansuriVoice | null = null;
@@ -473,8 +474,9 @@ class BansuriAudioEngine {
     this.tablaBus.gain.setTargetAtTime(this.mutes.tabla ? 0 : this.volumes.tabla * 0.45, now, 0.04);
   }
 
-  public setScaleHz(scaleRootHz: number) {
+  public setScaleHz(scaleRootHz: number, droneSwara?: SwaraId) {
     this.currentScaleHz = scaleRootHz;
+    this.currentDroneSwara = droneSwara;
   }
 
   /* ========================================================================
@@ -1394,16 +1396,23 @@ class BansuriAudioEngine {
   /* ========================================================================
      2. CONTINUOUS 4-STRING INDIAN TANPURA DRONE (Pa - Sa - Sa - Low Sa)
      ======================================================================== */
-  public async startTanpura(scaleRootHz: number) {
+  public async startTanpura(scaleRootHz: number, droneSwara?: SwaraId) {
     await this.ensureStarted();
     this.currentScaleHz = scaleRootHz;
+    this.currentDroneSwara = droneSwara;
     if (this.tanpuraRunning) return;
     this.tanpuraRunning = true;
     this.tanpuraStringIdx = 0;
 
     const pluckNextString = () => {
       if (!this.tanpuraRunning || !this.ctx || !this.tanpuraBus) return;
-      const baseSa = this.currentScaleHz / 2;
+      let effectiveRootHz = this.currentScaleHz;
+      if (this.currentDroneSwara) {
+        const semi = SWARA_META[this.currentDroneSwara].semitonesFromSa;
+        const offset = semi > 7 ? semi - 12 : semi;
+        effectiveRootHz = this.currentScaleHz * Math.pow(2, offset / 12);
+      }
+      const baseSa = effectiveRootHz / 2;
       const ratios = [0.75, 1.0, 1.0014, 0.5];
       const freq = baseSa * ratios[this.tanpuraStringIdx % 4];
       this.tanpuraStringIdx = (this.tanpuraStringIdx + 1) % 4;

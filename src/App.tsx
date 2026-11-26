@@ -123,9 +123,9 @@ export function App() {
   }, [volumes, mutes]);
 
   useEffect(() => {
-    audioEngine.setScaleHz(activeSong.scale.rootHz);
+    audioEngine.setScaleHz(activeSong.scale.rootHz, activeSong.droneSwara);
     ewiMidiBridge.setScaleRootHz(activeSong.scale.rootHz);
-  }, [activeSong.scale.rootHz]);
+  }, [activeSong.scale.rootHz, activeSong.droneSwara]);
 
   useEffect(() => {
     audioEngine.setEwiSettings(ewiSettings);
@@ -134,11 +134,11 @@ export function App() {
   // Manage Tanpura Drone lifecycle
   useEffect(() => {
     if (isPlaying || tanpuraHold) {
-      audioEngine.startTanpura(activeSong.scale.rootHz).catch(() => {});
+      audioEngine.startTanpura(activeSong.scale.rootHz, activeSong.droneSwara).catch(() => {});
     } else {
       audioEngine.stopTanpura();
     }
-  }, [isPlaying, tanpuraHold, activeSong.scale.rootHz]);
+  }, [isPlaying, tanpuraHold, activeSong.scale.rootHz, activeSong.droneSwara]);
 
   useEffect(() => {
     return () => {

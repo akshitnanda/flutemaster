@@ -1,13 +1,14 @@
 {
   "name": "flutemaster-bansuri-studio",
   "private": true,
-  "version": "1.1.0",
+  "version": "1.2.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "typecheck": "tsc -b --noEmit",
     "build": "tsc -b && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "audit:library": "node scripts/audit-library.mjs"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.9",

@@ -88,6 +88,8 @@ export interface Song {
   era: SongEra;
   difficulty: Difficulty;
   scale: BansuriScale;
+  /** Optional relative tonal center swara (e.g. 'R' for Re-tonic Kafi, 'D' for Dha-tonic Asavari) */
+  droneSwara?: SwaraId;
   raga: string;
   tala: TalaType;
   talaLabel: string;
