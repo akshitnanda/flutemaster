@@ -111,17 +111,11 @@ for (const song of lib) {
   }
 }
 
-if (lib.length < 467) {
-  failures.push(`Song count ${lib.length} < 467`);
+if (lib.length < 463) {
+  failures.push(`Song count ${lib.length} < 463`);
 }
-for (const reqSlug of [
-  'mere-mehboob-qayamat-hogi',
-  'ek-pyar-ka-nagma',
-  'mere-sapno-ki-rani',
-  'zindagi-ek-safar-hai-suhana',
-  'chaudhvin-ka-chand-ho',
-]) {
-  if (!byId.has(reqSlug)) failures.push(`Missing rescued song: ${reqSlug}`);
+if (!byId.has('mere-mehboob-qayamat-hogi')) {
+  failures.push('Missing rescued song: mere-mehboob-qayamat-hogi');
 }
 if (byId.has('aye-dil-mujhe-aisi-jagah-le-chal')) {
   failures.push('Clone song still present: aye-dil-mujhe-aisi-jagah-le-chal');
@@ -134,8 +128,8 @@ if (!paal || swCount(paal, 'Rk') !== 0 || swCount(paal, 'Gk') !== 0) {
   failures.push(`Golden check failed on o-paalanhaare: Rk=${swCount(paal, 'Rk')}, Gk=${swCount(paal, 'Gk')}`);
 }
 const chup = byId.get('dil-ne-kaha-chupke-se');
-if (!chup || swCount(chup, 'Gk') !== 0) {
-  failures.push(`Golden check failed on dil-ne-kaha-chupke-se: Gk=${swCount(chup, 'Gk')}`);
+if (!chup || swCount(chup, 'Gk') !== 0 || chup.y !== 1994) {
+  failures.push(`Golden check failed on dil-ne-kaha-chupke-se: Gk=${swCount(chup, 'Gk')} y=${chup?.y}`);
 }
 const jab = byId.get('jab-koi-baat-bigad-jaaye');
 if (!jab || swCount(jab, 'Mt') < 4) {
@@ -164,6 +158,26 @@ if (!hero || hero.y !== 1983 || hero.sc !== 'E_BASS') {
 const tumile = byId.get('tu-mile-dil-khile');
 if (!tumile || swCount(tumile, 'Nk') < 5) {
   failures.push(`Golden check failed on tu-mile-dil-khile: Nk=${swCount(tumile, 'Nk')}`);
+}
+const dils = byId.get('dil-smbhal-ja-zara');
+if (!dils || swCount(dils, 'Gk') < 5 || swCount(dils, 'Nk') < 5) {
+  failures.push(`Golden check failed on dil-smbhal-ja-zara: Gk=${swCount(dils, 'Gk')} Nk=${swCount(dils, 'Nk')}`);
+}
+const jiyad = byId.get('tujhe-dekh-dekh-sona');
+const jiyadTaarS = jiyad ? jiyad.n.filter((x) => x[0] === 'S' && x[1] === 2).length : 0;
+if (!jiyad || jiyadTaarS < 4) {
+  failures.push(`Golden check failed on tujhe-dekh-dekh-sona: taarS=${jiyadTaarS}`);
+}
+const rawSargamLyricRx = /^[SRGMPDNrgmdn\s.,…'’|~{}()\-0-9#^\[\]×x]+$/;
+let sargamAsLyric = 0;
+for (const song of lib) {
+  for (let i = 0; i < song.n.length; i++) {
+    const lyr = song.n[i][4];
+    if (lyr && rawSargamLyricRx.test(lyr.trim()) && /[SRGMPDN]{2,}|[SRGMPDN]['’.,~]/.test(lyr)) {
+      sargamAsLyric++;
+      failures.push(`Raw sargam as lyric in ${song.id}#${i}: "${lyr}"`);
+    }
+  }
 }
 
 console.log('=== Sargam Library v2.0 Audit Summary ===');

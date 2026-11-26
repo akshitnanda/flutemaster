@@ -1567,7 +1567,9 @@ class BansuriAudioEngine {
 
     const osc = ctx.createOscillator();
     osc.type = 'triangle';
-    const pitch = Math.max(190, Math.min(440, baseHz));
+    let pitch = baseHz;
+    while (pitch > 0 && pitch < 190) pitch *= 2;
+    while (pitch > 440) pitch /= 2;
     osc.frequency.setValueAtTime(pitch * (isClosedTin ? 1.45 : 1.0), now);
     osc.frequency.exponentialRampToValueAtTime(pitch * (isClosedTin ? 1.15 : 0.99), now + 0.09);
 

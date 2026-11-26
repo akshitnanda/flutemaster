@@ -54,11 +54,57 @@ function toSemi(swara, octave) {
 }
 
 /**
+ * Normalizes notes outside the 6-hole Bansuri playable range [-5..19] (Mandra P .. Taar P)
+ * BEFORE resolveOctaveContinuity runs so out-of-range markers never poison continuity:
+ * - Any Taar D/Dk/N/Nk (>19) folds down to Madhya (+8..+11, sitting cleanly below Taar S').
+ * - Any Taar P immediately adjacent to a folded Taar D/N on the same line also folds to Madhya P
+ *   so ascending/descending P-D-N-S' runs stay stepwise with zero -10 cliffs.
+ * - Any Mandra S..Mt (< -5) folds to Madhya (counted as clamped).
+ */
+function normalizeOutOfRangeBeforeContinuity(notes) {
+  let clampedCount = 0;
+  const normalizedHighIndices = new Set();
+  for (let i = 0; i < notes.length; i++) {
+    const n = notes[i];
+    if (n.octave === 'taar' && SWARA_SEMI[n.swara] > 7) {
+      n.octave = 'madhya';
+      normalizedHighIndices.add(i);
+    } else if (n.octave === 'mandra' && SWARA_SEMI[n.swara] < 7) {
+      n.octave = 'madhya';
+      clampedCount++;
+    }
+  }
+  // Propagate Madhya fold to adjacent Taar P on the same line (e.g. P' D' N' S' -> P D N S')
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (let i = 0; i < notes.length; i++) {
+      if (notes[i].octave === 'taar' && notes[i].swara === 'P') {
+        const adjPrev =
+          i > 0 &&
+          notes[i - 1].lineIdx === notes[i].lineIdx &&
+          normalizedHighIndices.has(i - 1);
+        const adjNext =
+          i + 1 < notes.length &&
+          notes[i + 1].lineIdx === notes[i].lineIdx &&
+          normalizedHighIndices.has(i + 1);
+        if (adjPrev || adjNext) {
+          notes[i].octave = 'madhya';
+          normalizedHighIndices.add(i);
+          changed = true;
+        }
+      }
+    }
+  }
+  return clampedCount;
+}
+
+/**
  * Fixes missing octave markers within each vocal line:
- * 1) Prefix Mandra lookahead: if an unmarked line opening starts on MANDRA_OK (P/D/N)
- *    followed within <=2 notes by unmarked lower Madhya (S..G) with >=7 semitone drop,
- *    anchors the opening P/D/N in Mandra instead of letting S..G flip up to Taar.
- * 2) Forward continuity: snaps unmarked notes away from >=8-semitone jumps to an adjacent octave within <=5 semitones.
+ * 1) Prefix Mandra lookahead (up to 3 notes): if an unmarked line opens on D/Dk/N/Nk leading into S..R
+ *    with >=7 semitone drop, anchor opening notes in Mandra (excluding P-D -> S ascents).
+ * 2) Contextual 7-semitone P -> S' jump when followed on the same line by upper notes (>=7: P/D/N).
+ * 3) Forward continuity: snaps unmarked notes away from >=8-semitone jumps to an adjacent octave within <=5 semitones.
  */
 function resolveOctaveContinuity(notes) {
   let start = 0;
@@ -67,29 +113,27 @@ function resolveOctaveContinuity(notes) {
     let end = start;
     while (end < notes.length && notes[end].lineIdx === lineIdx) end++;
 
-    // Prefix lookahead for lines starting on unmarked ,N/,D rising into Madhya S..R
-    // (Exclude P-D -> S transitions, which are overwhelmingly ascending P D S' in Taar.)
-    const first = notes[start];
-    if (
-      start + 1 < end &&
-      !first.explicitOctave &&
-      first.octave === 'madhya' &&
-      (first.swara === 'N' || first.swara === 'Nk' || first.swara === 'D' || first.swara === 'Dk')
+    // Up to 3-note prefix Mandra lookahead on unmarked D/Dk/N/Nk leading into Madhya S..R
+    let k = start;
+    while (
+      k < end &&
+      k - start < 3 &&
+      !notes[k].explicitOctave &&
+      notes[k].octave === 'madhya' &&
+      (notes[k].swara === 'N' || notes[k].swara === 'Nk' || notes[k].swara === 'D' || notes[k].swara === 'Dk')
     ) {
-      const second = notes[start + 1];
-      if (!second.explicitOctave && second.octave === 'madhya') {
-        if (toSemi(second.swara, 'madhya') <= 2 && toSemi(first.swara, 'madhya') - toSemi(second.swara, 'madhya') >= 7) {
-          first.octave = 'mandra';
-        } else if (
-          start + 2 < end &&
-          (second.swara === 'N' || second.swara === 'Nk') &&
-          !notes[start + 2].explicitOctave &&
-          notes[start + 2].octave === 'madhya' &&
-          toSemi(notes[start + 2].swara, 'madhya') <= 2
-        ) {
-          first.octave = 'mandra';
-          second.octave = 'mandra';
-        }
+      k++;
+    }
+    if (
+      k > start &&
+      k < end &&
+      !notes[k].explicitOctave &&
+      notes[k].octave === 'madhya' &&
+      toSemi(notes[k].swara, 'madhya') <= 2 &&
+      toSemi(notes[k - 1].swara, 'madhya') - toSemi(notes[k].swara, 'madhya') >= 7
+    ) {
+      for (let p = start; p < k; p++) {
+        notes[p].octave = 'mandra';
       }
     }
 
@@ -98,6 +142,20 @@ function resolveOctaveContinuity(notes) {
       const cur = notes[i];
       const prev = notes[i - 1];
       if (cur.explicitOctave) continue;
+
+      // Contextual 7-semitone P -> S' leap (e.g. "jiya dhadak": P P S' D D S' D D)
+      if (
+        prev.octave === 'madhya' &&
+        prev.swara === 'P' &&
+        cur.swara === 'S' &&
+        cur.octave === 'madhya' &&
+        i + 1 < end &&
+        SWARA_SEMI[notes[i + 1].swara] >= 7 &&
+        notes[i + 1].octave !== 'mandra'
+      ) {
+        cur.octave = 'taar';
+        continue;
+      }
 
       const prevSemi = toSemi(prev.swara, prev.octave);
       const curSemi = toSemi(cur.swara, cur.octave);
@@ -125,74 +183,16 @@ function resolveOctaveContinuity(notes) {
 }
 
 /**
- * Handles notes outside 6-hole Bansuri playable range [-5..19] (Mandra P .. Taar P) AFTER continuity:
- * 1) Whole-line +/-12 shift if every note lands inside [-5, 19].
- * 2) Coherent high-cluster (-12) shift for any contiguous taar run containing D'/Dk'/N'/Nk'
- *    so adjacent S'/P' notes move to Madhya together without -10/+10 ping-pong leaps.
- * 3) Fallback per-note clamp for any remaining edge notes.
+ * Final playable-range safety assertion after continuity (never shifts lines down by -12).
  */
 function enforcePlayableRange(notes) {
   let clampedCount = 0;
-  let start = 0;
-  while (start < notes.length) {
-    const lineIdx = notes[start].lineIdx;
-    let end = start;
-    while (end < notes.length && notes[end].lineIdx === lineIdx) end++;
-
-    const lineNotes = notes.slice(start, end);
-    const semis = lineNotes.map((n) => toSemi(n.swara, n.octave));
-    const minS = Math.min(...semis);
-    const maxS = Math.max(...semis);
-
-    if (minS < -5 || maxS > 19) {
-      const shift = minS < -5 ? 12 : -12;
-      const canShiftWholeLine = lineNotes.every((n) => {
-        const s = toSemi(n.swara, n.octave) + shift;
-        return s >= -5 && s <= 19;
-      });
-      if (canShiftWholeLine) {
-        for (const n of lineNotes) {
-          n.octave =
-            shift === 12
-              ? n.octave === 'mandra'
-                ? 'madhya'
-                : 'taar'
-              : n.octave === 'taar'
-              ? 'madhya'
-              : 'mandra';
-        }
-      } else {
-        // Coherent contiguous taar-cluster shift down to madhya when cluster contains D'/N' (>19)
-        let idx = 0;
-        while (idx < lineNotes.length) {
-          if (lineNotes[idx].octave === 'taar') {
-            let cEnd = idx;
-            let hasAboveTaarP = false;
-            while (cEnd < lineNotes.length && lineNotes[cEnd].octave === 'taar') {
-              if (toSemi(lineNotes[cEnd].swara, 'taar') > 19) hasAboveTaarP = true;
-              cEnd++;
-            }
-            if (hasAboveTaarP) {
-              for (let c = idx; c < cEnd; c++) {
-                lineNotes[c].octave = 'madhya';
-              }
-            }
-            idx = cEnd;
-          } else {
-            idx++;
-          }
-        }
-        // Fallback per-note clamp for any still-out-of-range low notes
-        for (const n of lineNotes) {
-          const s = toSemi(n.swara, n.octave);
-          if (s < -5 || s > 19) {
-            n.octave = 'madhya';
-            clampedCount++;
-          }
-        }
-      }
+  for (const n of notes) {
+    const s = toSemi(n.swara, n.octave);
+    if (s < -5 || s > 19) {
+      n.octave = 'madhya';
+      clampedCount++;
     }
-    start = end;
   }
   return clampedCount;
 }
@@ -272,14 +272,15 @@ function inferThaatFromNotes(rawNotes) {
   if (isRk && !isGk && isMt && !isDk && !isNk) return 'Marwa Thaat';
   if (!isRk && isGk && !isMt && isDk && isNk) return 'Asavari Thaat';
   if (!isRk && isGk && !isMt && !isDk && isNk) return 'Kafi Thaat';
-  if (!isRk && !isGk && isMt && !isDk && !isNk) return 'Kalyan Thaat';
+  if (!isRk && !isGk && (!isMt || freq('Mt') < 0.05) && isDk && isNk) return 'Charukesi';
+  if (!isRk && !isGk && isMt && freq('Mt') >= 0.05 && !isDk && !isNk) return 'Kalyan Thaat';
   if (!isRk && !isGk && !isMt && !isDk && isNk) return 'Khamaj Thaat';
   if (!isRk && !isGk && !isMt && !isDk && !isNk) return 'Bilawal Thaat';
   if (isRk && !isGk && !isMt && !isDk && isNk) return 'Ahir Bhairav';
-  if (isMt && isNk && !isRk && !isGk) return 'Yaman / Khamaj';
+  if (isMt && freq('Mt') >= 0.05 && isNk && !isRk && !isGk) return 'Yaman / Khamaj';
   if (isGk && isDk && !isNk) return 'Keeravani';
-  if (isGk && isMt) return 'Madhuvanti / Todi';
-  if (isDk && !isGk && !isRk) return 'Charukesi';
+  if (isGk && isMt && freq('Mt') >= 0.05) return 'Madhuvanti / Todi';
+  if (isDk && isNk && !isGk && !isRk && !isMt) return 'Charukesi';
   return 'Mishra Thaat';
 }
 
@@ -326,7 +327,6 @@ for (const c of dump.categories) {
 const KNOWN_BPMS = {
   'kal-ho-na-ho-har-ghadi-badal-rahi-hai': { bpm: 82, tala: 'keherwa' },
   'chura-liya-hai-tumne-jo': { bpm: 80, tala: 'keherwa' },
-  'ek-pyar-ka-nagma': { bpm: 97, tala: 'keherwa' },
   'mere-mehboob-qayamat-hogi': { bpm: 106, tala: 'keherwa' },
   'hothon-se-chhoo-lo-tum': { bpm: 99, tala: 'dadra' },
   'neele-neele-ambar-par': { bpm: 89, tala: 'keherwa' },
@@ -337,16 +337,13 @@ const KNOWN_BPMS = {
   'chhoo-kar-mere-man-ko': { bpm: 96, tala: 'keherwa' },
   'tere-bina-zindagi-se': { bpm: 95, tala: 'keherwa' },
   'tere-bina-jiya-jaye-na': { bpm: 108, tala: 'dadra' },
-  'mere-sapno-ki-rani': { bpm: 124, tala: 'keherwa' },
   'pyar-diwana-hota-hai': { bpm: 102, tala: 'keherwa' },
   'o-mere-dil-ke-chain': { bpm: 109, tala: 'keherwa' },
-  'zindagi-ek-safar-hai-suhana': { bpm: 120, tala: 'keherwa' },
   'ek-ladki-ko-dekha-to': { bpm: 92, tala: 'keherwa' },
   'bahut-pyar-karte-hai': { bpm: 110, tala: 'dadra' },
   'jeena-yahan-merna-yahan': { bpm: 112, tala: 'keherwa' },
   'kora-kagaz-tha-yeh-mann-mera': { bpm: 96, tala: 'keherwa' },
   'abhi-naa-jao-chhod-kar': { bpm: 104, tala: 'dadra' },
-  'chaudhvin-ka-chand-ho': { bpm: 84, tala: 'keherwa' },
   'tum-itna-jo-muskura-rahe-ho': { bpm: 80, tala: 'keherwa' },
   'jana-gana-mana-indias-national-anthem': { bpm: 96, tala: 'keherwa' },
   'vande-mataram-anand-math': { bpm: 88, tala: 'keherwa' },
@@ -439,9 +436,89 @@ function htmlToLines(html) {
     .filter(Boolean);
 }
 
+const WESTERN_SEMI = {
+  C: 0, 'C#': 1, DB: 1, D: 2, 'D#': 3, EB: 3, E: 4, F: 5, 'F#': 6, GB: 6,
+  G: 7, 'G#': 8, AB: 8, A: 9, 'A#': 10, BB: 10, B: 11,
+};
+const SEMI_TO_SCALE_ID = [
+  'C_MEDIUM', 'C_SHARP_MEDIUM', 'D_BASS', 'D_SHARP_BASS', 'E_BASS', 'F_BASS',
+  'F_SHARP_MEDIUM', 'G_BASS', 'G_SHARP_MEDIUM', 'A_MEDIUM', 'A_SHARP_MEDIUM', 'B_MEDIUM',
+];
+
+function isWesternLine(line) {
+  if (!line) return false;
+  const t = line.trim();
+  return /^[A-G][#b]?(?:[\s|~….,\-]+[A-G][#b]?){2,}$/.test(t);
+}
+
+/**
+ * For posts that pair an uppercase Sargam line with a companion Western pitch line below it,
+ * extracts the true Komal/Tivra swara mapping (e.g. D# vs Sa=C -> G maps to Gk).
+ */
+function detectWesternDualSwaraMap(lines) {
+  const sargamVotes = { S: [], R: [], G: [], M: [], P: [], D: [], N: [] };
+  const allWesternSemi = [];
+  let pairCount = 0;
+
+  for (let i = 0; i < lines.length - 1; i++) {
+    if (isSargamLine(lines[i]) && isWesternLine(lines[i + 1])) {
+      pairCount++;
+      const sLetters = lines[i].match(/[SRGMPDN]/g) || [];
+      const wTokens = lines[i + 1].match(/[A-G][#b]?/g) || [];
+      for (const wt of wTokens) {
+        const semi = WESTERN_SEMI[wt.toUpperCase()];
+        if (semi !== undefined) allWesternSemi.push(semi);
+      }
+      if (sLetters.length >= 3 && sLetters.length === wTokens.length) {
+        for (let k = 0; k < sLetters.length; k++) {
+          const semi = WESTERN_SEMI[wTokens[k].toUpperCase()];
+          if (semi !== undefined && sargamVotes[sLetters[k]]) {
+            sargamVotes[sLetters[k]].push(semi);
+          }
+        }
+      }
+    }
+  }
+  if (pairCount < 2 || sargamVotes.S.length < 2) return null;
+
+  const saCounts = {};
+  for (const s of sargamVotes.S) saCounts[s] = (saCounts[s] || 0) + 1;
+  const saPitch = Number(Object.entries(saCounts).sort((a, b) => b[1] - a[1])[0][0]);
+
+  const intervalVotes = { R: {}, G: {}, M: {}, D: {}, N: {} };
+  for (const deg of ['R', 'G', 'M', 'D', 'N']) {
+    for (const p of sargamVotes[deg]) {
+      const iv = (p - saPitch + 12) % 12;
+      intervalVotes[deg][iv] = (intervalVotes[deg][iv] || 0) + 1;
+    }
+  }
+
+  // Supplement from global pitch inventory relative to Sa when aligned counts are sparse
+  const relSet = new Set(allWesternSemi.map((p) => (p - saPitch + 12) % 12));
+  const map = {};
+  const checkDeg = (deg, flatIv, flatSw, natIv, natSw) => {
+    const fCount = intervalVotes[deg][flatIv] || 0;
+    const nCount = intervalVotes[deg][natIv] || 0;
+    if (fCount > nCount) map[deg] = flatSw;
+    else if (nCount > fCount) map[deg] = natSw;
+    else if (relSet.has(flatIv) && !relSet.has(natIv)) map[deg] = flatSw;
+  };
+  checkDeg('R', 1, 'Rk', 2, 'R');
+  checkDeg('G', 3, 'Gk', 4, 'G');
+  checkDeg('M', 6, 'Mt', 5, 'M');
+  checkDeg('D', 8, 'Dk', 9, 'D');
+  checkDeg('N', 10, 'Nk', 11, 'N');
+
+  return {
+    swaraMap: map,
+    inferredScaleId: SEMI_TO_SCALE_ID[saPitch] || null,
+  };
+}
+
 function isSargamLine(line) {
   if (!line || line.length < 3) return false;
   if (/^h+m+/i.test(line.trim()) || /hm{2,}/i.test(line)) return false;
+  if (isWesternLine(line)) return false;
   if (
     /^(singer|singers|music|movie|film|lyrics|lyricist|raag|raga|scale|pitch|flute|note|notes|sthayi|mukhda|antara|charanam|pallavi|interlude|prel+ude|repeat|play|click|watch|video|http|based on|signs|symbols|this song|i used|for the|glass|piano|guitar|violin|voilin|melodica|trumpet|keyboard|saxophone|sax|sitar|santoor|harmonium|banjo|yoodling|yodelling|humming|whistle|accordion|mandolin|shehnai|aroh|avroh|thaat|pakad|vaadi|samvaadi)/i.test(
       line
@@ -449,10 +526,11 @@ function isSargamLine(line) {
   ) {
     return false;
   }
+  if (/\(\s*(?:aaroh|avroh|aroh)\s*\)/i.test(line)) return false;
   const cleaned = line
     .replace(/\(\s*[x×]\s*\d+\s*\)/gi, '')
     .replace(/\[\s*\d+\s*\]/g, '')
-    .replace(/[\|\s,\.\'’\+\*\~\-\(\)\{\}\[\]…_#\/\^0-9:;!×]+/g, '');
+    .replace(/[\|\u0964\s,\.\'’\+\*\~\-\(\)\{\}\[\]…_#\/\^0-9:;!×]+/g, '');
 
   if (cleaned.length < 3) return false;
   const swaraChars = (cleaned.match(/[SRGMPDNrgmdnsp]/g) || []).length;
@@ -467,7 +545,12 @@ function isSargamLine(line) {
     return false;
   }
   const distinctSwaras = new Set(cleaned.toUpperCase().match(/[SRGMPDN]/g) || []);
-  return distinctSwaras.size >= 2;
+  if (distinctSwaras.size >= 2) return true;
+  return (
+    distinctSwaras.size === 1 &&
+    !/^m+$/i.test(cleaned) &&
+    (/[|'’,~{}()…\.]/.test(line) || /\b[SRGPDN]\s+[SRGPDN]\b/.test(line))
+  );
 }
 
 const SECTION_KEYWORDS_RX =
@@ -495,6 +578,9 @@ function isLyricLine(line) {
   if (!line || line.length < 2) return false;
   const t = line.trim();
   if (isSargamLine(t)) return false;
+  if (isWesternLine(t)) return false;
+  if (/\(\s*(?:aaroh|avroh|aroh)\s*\)/i.test(t)) return false;
+  if (/^[SRGMPDNrgmdn\s.,…'’|\u0964~{}()\-0-9#^\[\]×x]+$/.test(t)) return false;
   if (isSectionHeader(t)) return false;
   if (/^\s*[\(\[].*[\)\]]\s*[:.]*$/.test(t)) return false;
   if (
@@ -537,11 +623,13 @@ function parseSargamSegment(segment, opts = {}) {
     mPrimeIsTivra = false,
     carnatic = false,
     lowercaseShuddha = false,
+    westernSwaraMap = null,
   } = opts;
   const tokens = [];
-  // Normalize infix suffix-comma/dot (e.g. N,S -> ,NS, n.s -> ,ns) and leading prefix apostrophe before D/N
+  // Collapse repeated commas, normalize infix suffix-comma/dot (e.g. N,S -> ,NS), and leading apostrophe
   const seg = segment
     .replace(/\(\s*[x×]\s*\d+\s*\)/gi, '')
+    .replace(/,{2,}/g, ' ')
     .replace(/(?<![,.])([PDNdn])([,.])(?=[SRGMrgm])/g, ',$1')
     .replace(/(^|[\s|(])['’]([NDnd])/g, '$1,$2')
     .trim();
@@ -554,6 +642,9 @@ function parseSargamSegment(segment, opts = {}) {
   let murkiHasGamak = false;
 
   const mapLetter = (ch, isSharpAfter) => {
+    if (westernSwaraMap && !isSharpAfter && westernSwaraMap[ch]) {
+      return westernSwaraMap[ch];
+    }
     switch (ch) {
       case 'S':
       case 's':
@@ -635,12 +726,14 @@ function parseSargamSegment(segment, opts = {}) {
     let octave = 'madhya';
     let explicitOctave = false;
     if ((ch === ',' || ch === '.') && i + 1 < seg.length && /[SRGMPDNrgmdn]/.test(seg[i + 1])) {
-      const isSustainDots = ch === '.' && i > 0 && seg[i - 1] === '.';
+      const isSustainDots =
+        ch === '.' && ((i > 0 && seg[i - 1] === '.') || (tokens.length > 0 && /[SRGMrgm]/.test(seg[i + 1])));
       if (!isSustainDots) {
         octave = 'mandra';
         explicitOctave = true;
         i++;
       } else {
+        if (tokens.length > 0) tokens[tokens.length - 1].sustainCount += 1;
         i++;
         continue;
       }
@@ -820,7 +913,9 @@ function inferEraAndYear(post, lines, movieRaw) {
   const catSlugs = post.categories.map((id) => catById.get(id)?.slug || '');
 
   let year = null;
-  const ym = (movieRaw || lines.slice(0, 10).join(' ')).match(/\b(19[4-9]\d|20[0-2]\d)\b/);
+  const headerStr = movieRaw || lines.slice(0, 10).join(' ');
+  const parenYm = headerStr.match(/\(\s*(19[4-9]\d|20[0-2]\d)\s*\)/);
+  const ym = parenYm || headerStr.match(/\b(19[4-9]\d|20[0-2]\d)\b/);
   if (ym) year = Number(ym[1]);
 
   if (!year) {
@@ -887,11 +982,13 @@ function compileSongFromLines({
   const lowerSwaraLetters = sargamJoined.match(/[srgmpdn]/g) || [];
   const lowerRatio = lowerSwaraLetters.length / Math.max(1, allSwaraLetters.length);
   const lowercaseShuddha = lowerRatio >= 0.6 && /[sp]/.test(sargamJoined);
+  const westernInfo = detectWesternDualSwaraMap(lines);
   const parseOpts = {
     maMode,
     mPrimeIsTivra: Boolean(SLUG_OVERRIDES[slug]?.mPrimeIsTivra),
     carnatic,
     lowercaseShuddha,
+    westernSwaraMap: westernInfo?.swaraMap || null,
   };
 
   const beatsPerBar = tala === 'dadra' ? 6 : 8;
@@ -955,12 +1052,13 @@ function compileSongFromLines({
     const prevLine = idx > 0 ? lines[idx - 1] : '';
     const lyricLine = isLyricLine(prevLine) && !INLINE_INST_PREFIX_RX.test(prevLine.trim()) ? prevLine : '';
 
-    const sargamCells = line.includes('|')
-      ? line
-          .split('|')
-          .map((s) => s.trim())
-          .filter(Boolean)
-      : [line];
+    const sargamCells =
+      line.includes('|') || line.includes('\u0964')
+        ? line
+            .split(/[|\u0964]/)
+            .map((s) => s.trim())
+            .filter(Boolean)
+        : [line];
     const lyricCells =
       lyricLine && (lyricLine.includes('|') || lyricLine.includes('\u0964'))
         ? lyricLine
@@ -987,13 +1085,20 @@ function compileSongFromLines({
     }
 
     const pushParsedGroup = (parsed, word) => {
-      const cleanWord = (word || '')
+      let cleanWord = (word || '')
         .replace(/^[A-Za-z ]+:\s*/, '')
         .replace(/[\(\[]\s*(?:avroh|aroh|music|interlude|flute)\s*[\)\]]/gi, '')
         .replace(/\s*\(\s*[x×]?\s*\d+\s*\)/gi, '')
         .replace(/~+/g, '')
         .replace(/\s+/g, ' ')
         .trim();
+      if (
+        cleanWord &&
+        /^[SRGMPDNrgmdn\s.,…'’|~{}()\-0-9#^\[\]×x]+$/.test(cleanWord) &&
+        (/[SRGMPDN]{2,}|[SRGMPDN]['’.,~]/.test(cleanWord))
+      ) {
+        cleanWord = '';
+      }
       const baseDur = parsed.length === 1 ? 0.85 : parsed.length === 2 ? 0.5 : 0.35;
       for (let k = 0; k < parsed.length; k++) {
         const tok = parsed[k];
@@ -1141,6 +1246,7 @@ function compileSongFromLines({
 
   if (rawNotes.length < 18) return null;
 
+  totalClampedNotes += normalizeOutOfRangeBeforeContinuity(rawNotes);
   resolveOctaveContinuity(rawNotes);
   totalClampedNotes += enforcePlayableRange(rawNotes);
   recomputeOrnaments(rawNotes);
@@ -1324,9 +1430,10 @@ function parsePostToCompactSong(post) {
   const mir = mirCache[slug];
   const mirValid = !MIR_BLOCKLIST.has(slug) && mir && mir.status === 'ok' && mir.oemVerified === true;
   const explicitScale = override?.scaleId || detectScaleId(lines, null);
+  const westernFallback = !explicitScale ? detectWesternDualSwaraMap(lines)?.inferredScaleId : null;
   const fallbackScale =
     era === 'Retro Classics' ? 'G_BASS' : era === 'Modern Bollywood' ? 'E_BASS' : 'C_MEDIUM';
-  const scaleId = explicitScale || fallbackScale;
+  const scaleId = explicitScale || westernFallback || fallbackScale;
 
   const known = KNOWN_BPMS[slug];
   let bpm = override?.bpm ?? known?.bpm ?? 92;

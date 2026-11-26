@@ -111,7 +111,7 @@ export const EWI_PAD_LABELS = [
 /**
  * Semitone offsets of each Bansuri scale relative to Written G (Sa = L1+L2+L3 closed).
  * Dialing this exact number into the Eastar EDA-100 "Trans" button (-12..+12) lets you play
- * EVERY SINGLE ONE of the 472 Bollywood songs in the exact concert key using one familiar fingering!
+ * EVERY SINGLE ONE of the 472+ Bollywood songs in the exact concert key using one familiar fingering!
  */
 const SCALE_TO_SEMITONE_FROM_G: Record<string, number> = {
   D_BASS: -5,
